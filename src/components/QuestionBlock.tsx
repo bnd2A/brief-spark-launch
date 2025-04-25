@@ -1,4 +1,3 @@
-
 import React, { ReactNode } from 'react';
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,15 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2 } from "lucide-react";
 
+interface Question {
+  id: string;
+  type: 'short' | 'long' | 'multiple' | 'checkbox' | 'upload';
+  question: string;
+  required: boolean;
+  options?: string[];
+}
+
 interface QuestionBlockProps {
-  question: {
-    id: string;
-    type: 'short' | 'long' | 'multiple' | 'checkbox' | 'upload';
-    question: string;
-    required: boolean;
-    options?: string[];
-  };
-  onChange: (data: Partial<typeof QuestionBlockProps.prototype.question>) => void;
+  question: Question;
+  onChange: (data: Partial<Question>) => void;
   onRemove: () => void;
   dragHandle?: ReactNode;
 }
