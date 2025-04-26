@@ -8,9 +8,11 @@ import { useBriefForm } from '@/hooks/useBriefForm';
 import { BriefDetails } from '@/components/brief/BriefDetails';
 import { QuestionsList } from '@/components/brief/QuestionsList';
 import { BriefPreview } from '@/components/brief/BriefPreview';
+import { useToast } from '@/hooks/use-toast';
 
 const CreateBrief = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const {
     title,
     setTitle,
@@ -23,6 +25,14 @@ const CreateBrief = () => {
     handleDragEnd,
     saveAndPreview
   } = useBriefForm();
+
+  const handleSaveAndPreview = () => {
+    toast({
+      title: "Brief saved",
+      description: "Your brief has been saved successfully.",
+    });
+    saveAndPreview();
+  };
 
   return (
     <AppLayout>
@@ -62,7 +72,7 @@ const CreateBrief = () => {
             title={title}
             description={description}
             questions={questions}
-            onSaveAndPreview={saveAndPreview}
+            onSaveAndPreview={handleSaveAndPreview}
           />
         </div>
       </div>

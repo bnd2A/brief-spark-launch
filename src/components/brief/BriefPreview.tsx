@@ -4,11 +4,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { Question } from '@/types/question';
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 
 interface BriefPreviewProps {
   title: string;
@@ -95,7 +90,7 @@ export function BriefPreview({
 
   return (
     <Card className="p-6 sticky top-6">
-      <h2 className="text-xl font-medium mb-4">Brief preview</h2>
+      <h2 className="text-xl font-medium mb-4">Live preview</h2>
       <div className="aspect-[9/16] bg-muted/30 rounded-lg mb-6 flex items-center justify-center overflow-hidden">
         {title ? (
           <div className="w-full h-full p-4 flex flex-col">
@@ -131,7 +126,7 @@ export function BriefPreview({
           disabled={!title || questions.length === 0} 
           onClick={onSaveAndPreview}
         >
-          Save and preview
+          Save and publish
         </Button>
         <Button 
           variant="outline" 

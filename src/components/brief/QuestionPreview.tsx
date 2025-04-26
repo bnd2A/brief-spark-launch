@@ -3,16 +3,29 @@ import React from 'react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Question } from '@/types/question';
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface QuestionPreviewProps {
   question: Question;
 }
 
 export function QuestionPreview({ question }: QuestionPreviewProps) {
+  if (!question.question) {
+    return null;
+  }
+  
   if (question.type === 'long') {
     return (
       <div className="pl-4">
-        <Textarea disabled placeholder="Long text answer will appear here..." className="resize-none bg-muted/30" />
+        <Label htmlFor="preview-long" className="text-xs mb-1">{question.question}</Label>
+        <Textarea 
+          id="preview-long"
+          disabled 
+          placeholder="Long text answer will appear here..." 
+          className="resize-none bg-muted/30" 
+        />
       </div>
     );
   }
@@ -20,7 +33,45 @@ export function QuestionPreview({ question }: QuestionPreviewProps) {
   if (question.type === 'short') {
     return (
       <div className="pl-4">
-        <Input disabled placeholder="Short text answer will appear here..." className="bg-muted/30" />
+        <Label htmlFor="preview-short" className="text-xs mb-1">{question.question}</Label>
+        <Input 
+          id="preview-short"
+          disabled 
+          placeholder="Short text answer will appear here..." 
+          className="bg-muted/30" 
+        />
+      </div>
+    );
+  }
+  
+  if (question.type === 'multiple' && question.options && question.options.length > 0) {
+    return (
+      <div className="pl-4">
+        <Label className="text-xs mb-2">{question.question}</Label>
+        <RadioGroup disabled className="space-y-1">
+          {question.options.map((option, i) => (
+            <div key={i} className="flex items-center space-x-2">
+              <RadioGroupItem value={option} id={`option-${i}`} disabled />
+              <Label htmlFor={`option-${i}`} className="text-xs">{option}</Label>
+            </div>
+          ))}
+        </RadioGroup>
+      </div>
+    );
+  }
+  
+  if (question.type === 'checkbox' && question.options && question.options.length > 0) {
+    return (
+      <div className="pl-4">
+        <Label className="text-xs mb-2">{question.question}</Label>
+        <div className="space-y-1">
+          {question.options.map((option, i) => (
+            <div key={i} className="flex items-center space-x-2">
+              <Checkbox id={`check-${i}`} disabled />
+              <Label htmlFor={`check-${i}`} className="text-xs">{option}</Label>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -28,6 +79,7 @@ export function QuestionPreview({ question }: QuestionPreviewProps) {
   if (question.type === 'upload') {
     return (
       <div className="pl-4">
+        <Label className="text-xs mb-1">{question.question}</Label>
         <div className="h-20 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/30">
           <div className="text-center text-sm text-muted-foreground">
             File upload field
