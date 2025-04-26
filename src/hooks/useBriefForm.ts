@@ -3,14 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
-
-export interface Question {
-  id: string;
-  type: 'short' | 'long' | 'multiple' | 'checkbox' | 'upload';
-  question: string;
-  required: boolean;
-  options?: string[];
-}
+import { Question } from '@/types/question';
 
 export function useBriefForm() {
   const navigate = useNavigate();
