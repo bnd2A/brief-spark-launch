@@ -8,8 +8,8 @@ import { Trash2, GripVertical } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { QuestionBlockProps } from '@/types/question';
-import { QuestionOptions } from './brief/QuestionOptions';
-import { QuestionPreview } from './brief/QuestionPreview';
+import { QuestionOptions } from './QuestionOptions';
+import { QuestionPreview } from './QuestionPreview';
 
 const QuestionBlock = ({ question, onChange, onRemove }: QuestionBlockProps) => {
   const {

@@ -3,8 +3,8 @@ import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import QuestionBlock from '../QuestionBlock';
-import { Question } from '@/hooks/useBriefForm';
+import QuestionBlock from './QuestionBlock';
+import { Question } from '@/types/question';
 import {
   DndContext,
   DragEndEvent,
