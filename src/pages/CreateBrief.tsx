@@ -1,13 +1,25 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Plus, Trash2, GripVertical } from "lucide-react";
+import { ArrowLeft, Plus, GripVertical } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
 import QuestionBlock from '@/components/QuestionBlock';
+import {
+  DndContext,
+  DragEndEvent,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 
 interface Question {
   id: string;
@@ -19,6 +31,10 @@ interface Question {
 
 const CreateBrief = () => {
   const navigate = useNavigate();
+  const sensors = useSensors(
+    useSensor(MouseSensor),
+    useSensor(TouchSensor)
+  );
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -57,14 +73,24 @@ const CreateBrief = () => {
   };
 
   const saveAndPreview = () => {
-    // In a real app, save the brief to the backend
     console.log({
       title,
       description,
       questions
     });
-    // Then navigate to preview
     navigate('/share/preview');
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      setQuestions((items) => {
+        const oldIndex = items.findIndex((q) => q.id === active.id);
+        const newIndex = items.findIndex((q) => q.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
   };
 
   return (
@@ -83,7 +109,6 @@ const CreateBrief = () => {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Builder column */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="p-6">
             <h2 className="text-xl font-medium mb-4">Brief details</h2>
@@ -114,15 +139,18 @@ const CreateBrief = () => {
           <div className="space-y-4">
             <h2 className="text-xl font-medium">Questions</h2>
             
-            {questions.map((question, index) => (
-              <QuestionBlock
-                key={question.id}
-                question={question}
-                onChange={(data) => updateQuestion(question.id, data)}
-                onRemove={() => removeQuestion(question.id)}
-                dragHandle={<GripVertical className="h-5 w-5 text-muted-foreground" />}
-              />
-            ))}
+            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+              <SortableContext items={questions.map(q => q.id)} strategy={verticalListSortingStrategy}>
+                {questions.map((question) => (
+                  <QuestionBlock
+                    key={question.id}
+                    question={question}
+                    onChange={(data) => updateQuestion(question.id, data)}
+                    onRemove={() => removeQuestion(question.id)}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
             
             <Card className="p-6 border-dashed flex items-center justify-center">
               <div className="text-center">
@@ -149,7 +177,6 @@ const CreateBrief = () => {
           </div>
         </div>
         
-        {/* Preview and actions column */}
         <div>
           <Card className="p-6 sticky top-6">
             <h2 className="text-xl font-medium mb-4">Brief preview</h2>
