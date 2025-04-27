@@ -9,6 +9,71 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      brief_responses: {
+        Row: {
+          answers: Json
+          brief_id: string
+          id: string
+          respondent_email: string | null
+          submitted_at: string | null
+        }
+        Insert: {
+          answers: Json
+          brief_id: string
+          id?: string
+          respondent_email?: string | null
+          submitted_at?: string | null
+        }
+        Update: {
+          answers?: Json
+          brief_id?: string
+          id?: string
+          respondent_email?: string | null
+          submitted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brief_responses_brief_id_fkey"
+            columns: ["brief_id"]
+            isOneToOne: false
+            referencedRelation: "briefs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      briefs: {
+        Row: {
+          archived: boolean | null
+          created_at: string | null
+          description: string | null
+          id: string
+          questions: Json
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          questions: Json
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          archived?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          questions?: Json
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

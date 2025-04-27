@@ -1,9 +1,10 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { Question } from '@/types/question';
+import { useBriefs } from './useBriefs';
+import { useToast } from './use-toast';
 
 export interface Brief {
   id: string;
@@ -12,8 +13,11 @@ export interface Brief {
   questions: Question[];
 }
 
-export function useBriefForm() {
+export function useBriefForm(briefId?: string) {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { createBrief, updateBrief } = useBriefs();
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [questions, setQuestions] = useState<Question[]>([
@@ -62,13 +66,36 @@ export function useBriefForm() {
     }
   };
 
-  const saveAndPreview = () => {
-    console.log({
-      title,
-      description,
-      questions
-    });
-    navigate('/share/preview');
+  const saveAndPreview = async () => {
+    try {
+      const briefData = {
+        title,
+        description,
+        questions
+      };
+
+      if (briefId) {
+        await updateBrief.mutateAsync({ id: briefId, ...briefData });
+        toast({
+          title: "Brief updated",
+          description: "Your brief has been updated successfully.",
+        });
+      } else {
+        await createBrief.mutateAsync(briefData);
+        toast({
+          title: "Brief created",
+          description: "Your brief has been created successfully.",
+        });
+      }
+      
+      navigate('/share/preview');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "There was a problem saving your brief.",
+        variant: "destructive"
+      });
+    }
   };
 
   const loadBrief = (brief: Brief) => {
