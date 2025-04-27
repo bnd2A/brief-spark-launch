@@ -5,6 +5,13 @@ import { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { Question } from '@/types/question';
 
+export interface Brief {
+  id: string;
+  title: string;
+  description: string;
+  questions: Question[];
+}
+
 export function useBriefForm() {
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
@@ -64,6 +71,12 @@ export function useBriefForm() {
     navigate('/share/preview');
   };
 
+  const loadBrief = (brief: Brief) => {
+    setTitle(brief.title);
+    setDescription(brief.description);
+    setQuestions(brief.questions);
+  };
+
   return {
     title,
     setTitle,
@@ -74,6 +87,7 @@ export function useBriefForm() {
     updateQuestion,
     removeQuestion,
     handleDragEnd,
-    saveAndPreview
+    saveAndPreview,
+    loadBrief
   };
 }
