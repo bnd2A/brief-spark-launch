@@ -2,6 +2,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Brief } from '@/hooks/useBriefForm';
+import { Question } from '@/types/question';
+import { Json } from '@/integrations/supabase/types';
 
 export interface BriefWithStats extends Brief {
   created_at: string;
@@ -40,7 +42,7 @@ export const useBriefs = () => {
         .insert({
           title: brief.title,
           description: brief.description,
-          questions: brief.questions
+          questions: brief.questions as unknown as Json
         })
         .select()
         .single();
@@ -60,7 +62,7 @@ export const useBriefs = () => {
         .update({
           title: brief.title,
           description: brief.description,
-          questions: brief.questions
+          questions: brief.questions as unknown as Json
         })
         .eq('id', brief.id)
         .select()

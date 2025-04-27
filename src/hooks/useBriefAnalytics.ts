@@ -16,7 +16,7 @@ export const useBriefAnalytics = (briefId: string) => {
 
       // Group responses by date
       const responsesByDate = responses.reduce((acc: Record<string, number>, response) => {
-        const date = new Date(response.submitted_at).toLocaleDateString();
+        const date = new Date(response.submitted_at || '').toLocaleDateString();
         acc[date] = (acc[date] || 0) + 1;
         return acc;
       }, {});

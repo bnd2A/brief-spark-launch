@@ -49,13 +49,20 @@ export function BriefAnalytics({ responsesOverTime, totalResponses, averageCompl
             </CardHeader>
             <CardContent>
               <div className="h-[200px]">
-                <ChartContainer className="w-full">
+                <ChartContainer 
+                  className="w-full"
+                  config={{
+                    responses: { 
+                      color: 'hsl(var(--primary))' 
+                    }
+                  }}
+                >
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={responsesOverTime}>
                       <XAxis dataKey="date" />
                       <YAxis />
                       <Tooltip content={({ active, payload }) => {
-                        if (!active || !payload) return null;
+                        if (!active || !payload?.length) return null;
                         return (
                           <ChartTooltip>
                             <div className="flex flex-col gap-2">
