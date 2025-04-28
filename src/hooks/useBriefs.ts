@@ -37,12 +37,18 @@ export const useBriefs = () => {
 
   const createBrief = useMutation({
     mutationFn: async (brief: Omit<Brief, 'id'>) => {
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) throw new Error('User not authenticated');
+      
       const { data, error } = await supabase
         .from('briefs')
         .insert({
           title: brief.title,
           description: brief.description,
-          questions: brief.questions as unknown as Json
+          questions: brief.questions as unknown as Json,
+          user_id: user.id
         })
         .select()
         .single();

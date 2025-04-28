@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
+import { ResponseActions } from './ResponseActions';
 
 export const ResponseHeader = ({ title }: { title: string }) => {
   const navigate = useNavigate();
