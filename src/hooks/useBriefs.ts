@@ -9,6 +9,8 @@ export interface BriefWithStats extends Brief {
   created_at: string;
   updated_at: string;
   responses_count: number;
+  shared?: boolean;
+  sharedBy?: string;
 }
 
 export const useBriefs = () => {
