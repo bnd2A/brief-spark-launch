@@ -9,12 +9,14 @@ import { useBriefForm } from '@/hooks/useBriefForm';
 import { BriefDetails } from '@/components/brief/BriefDetails';
 import { QuestionsList } from '@/components/brief/QuestionsList';
 import { BriefPreview } from '@/components/brief/BriefPreview';
+import { BriefStyling } from '@/components/brief/BriefStyling';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const EditBrief = () => {
   const { id } = useParams();
@@ -29,6 +31,8 @@ const EditBrief = () => {
     description,
     setDescription,
     questions,
+    style,
+    setStyle,
     addQuestion,
     updateQuestion,
     removeQuestion,
@@ -64,7 +68,8 @@ const EditBrief = () => {
           id: data.id,
           title: data.title,
           description: data.description || '',
-          questions: data.questions as any || []
+          questions: data.questions as any || [],
+          style: data.style as any || {}
         });
       }
       
@@ -167,20 +172,36 @@ const EditBrief = () => {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          <BriefDetails
-            title={title}
-            description={description}
-            onTitleChange={setTitle}
-            onDescriptionChange={setDescription}
-          />
-          
-          <QuestionsList
-            questions={questions}
-            onAddQuestion={addQuestion}
-            onUpdateQuestion={updateQuestion}
-            onRemoveQuestion={removeQuestion}
-            onDragEnd={handleDragEnd}
-          />
+          <Tabs defaultValue="content">
+            <TabsList className="mb-6">
+              <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="appearance">Appearance</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="content" className="space-y-6">
+              <BriefDetails
+                title={title}
+                description={description}
+                onTitleChange={setTitle}
+                onDescriptionChange={setDescription}
+              />
+              
+              <QuestionsList
+                questions={questions}
+                onAddQuestion={addQuestion}
+                onUpdateQuestion={updateQuestion}
+                onRemoveQuestion={removeQuestion}
+                onDragEnd={handleDragEnd}
+              />
+            </TabsContent>
+            
+            <TabsContent value="appearance">
+              <BriefStyling 
+                style={style}
+                onChange={setStyle}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
         
         <div>
@@ -188,6 +209,7 @@ const EditBrief = () => {
             title={title}
             description={description}
             questions={questions}
+            style={style}
             onSaveAndPreview={handleSaveAndPreview}
           />
         </div>

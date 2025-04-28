@@ -9,12 +9,19 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface QuestionPreviewProps {
   question: Question;
+  primaryColor?: string;
 }
 
-export function QuestionPreview({ question }: QuestionPreviewProps) {
+export function QuestionPreview({ question, primaryColor = '#9b87f5' }: QuestionPreviewProps) {
   if (!question.question) {
     return null;
   }
+  
+  // Create a style object for elements that should use the primary color
+  const primaryColorStyle = {
+    borderColor: primaryColor,
+    '--ring': primaryColor,
+  } as React.CSSProperties;
   
   if (question.type === 'long') {
     return (
@@ -25,6 +32,7 @@ export function QuestionPreview({ question }: QuestionPreviewProps) {
           disabled 
           placeholder="Long text answer will appear here..." 
           className="resize-none bg-muted/30" 
+          style={primaryColorStyle}
         />
       </div>
     );
@@ -39,6 +47,7 @@ export function QuestionPreview({ question }: QuestionPreviewProps) {
           disabled 
           placeholder="Short text answer will appear here..." 
           className="bg-muted/30" 
+          style={primaryColorStyle}
         />
       </div>
     );
@@ -51,7 +60,12 @@ export function QuestionPreview({ question }: QuestionPreviewProps) {
         <RadioGroup disabled className="space-y-1">
           {question.options.map((option, i) => (
             <div key={i} className="flex items-center space-x-2">
-              <RadioGroupItem value={option} id={`option-${i}`} disabled />
+              <RadioGroupItem 
+                value={option} 
+                id={`option-${i}`} 
+                disabled 
+                style={primaryColorStyle}
+              />
               <Label htmlFor={`option-${i}`} className="text-xs">{option}</Label>
             </div>
           ))}
@@ -67,7 +81,11 @@ export function QuestionPreview({ question }: QuestionPreviewProps) {
         <div className="space-y-1">
           {question.options.map((option, i) => (
             <div key={i} className="flex items-center space-x-2">
-              <Checkbox id={`check-${i}`} disabled />
+              <Checkbox 
+                id={`check-${i}`} 
+                disabled 
+                style={primaryColorStyle}
+              />
               <Label htmlFor={`check-${i}`} className="text-xs">{option}</Label>
             </div>
           ))}
@@ -80,7 +98,10 @@ export function QuestionPreview({ question }: QuestionPreviewProps) {
     return (
       <div className="pl-4">
         <Label className="text-xs mb-1">{question.question}</Label>
-        <div className="h-20 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/30">
+        <div 
+          className="h-20 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/30"
+          style={{ borderColor: primaryColor }}
+        >
           <div className="text-center text-sm text-muted-foreground">
             File upload field
           </div>

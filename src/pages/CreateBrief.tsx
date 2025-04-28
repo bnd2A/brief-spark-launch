@@ -8,6 +8,7 @@ import { useBriefForm } from '@/hooks/useBriefForm';
 import { BriefDetails } from '@/components/brief/BriefDetails';
 import { QuestionsList } from '@/components/brief/QuestionsList';
 import { BriefPreview } from '@/components/brief/BriefPreview';
+import { BriefStyling } from '@/components/brief/BriefStyling';
 import { useToast } from '@/hooks/use-toast';
 import {
   Sheet,
@@ -21,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const CreateBrief = () => {
   const navigate = useNavigate();
@@ -31,6 +33,8 @@ const CreateBrief = () => {
     description,
     setDescription,
     questions,
+    style,
+    setStyle,
     addQuestion,
     updateQuestion,
     removeQuestion,
@@ -122,20 +126,36 @@ const CreateBrief = () => {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          <BriefDetails
-            title={title}
-            description={description}
-            onTitleChange={setTitle}
-            onDescriptionChange={setDescription}
-          />
-          
-          <QuestionsList
-            questions={questions}
-            onAddQuestion={addQuestion}
-            onUpdateQuestion={updateQuestion}
-            onRemoveQuestion={removeQuestion}
-            onDragEnd={handleDragEnd}
-          />
+          <Tabs defaultValue="content">
+            <TabsList className="mb-6">
+              <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="appearance">Appearance</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="content" className="space-y-6">
+              <BriefDetails
+                title={title}
+                description={description}
+                onTitleChange={setTitle}
+                onDescriptionChange={setDescription}
+              />
+              
+              <QuestionsList
+                questions={questions}
+                onAddQuestion={addQuestion}
+                onUpdateQuestion={updateQuestion}
+                onRemoveQuestion={removeQuestion}
+                onDragEnd={handleDragEnd}
+              />
+            </TabsContent>
+            
+            <TabsContent value="appearance">
+              <BriefStyling 
+                style={style}
+                onChange={setStyle}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
         
         <div>
@@ -143,6 +163,7 @@ const CreateBrief = () => {
             title={title}
             description={description}
             questions={questions}
+            style={style}
             onSaveAndPreview={handleSaveAndPreview}
           />
         </div>

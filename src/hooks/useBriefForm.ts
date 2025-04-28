@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DragEndEvent } from '@dnd-kit/core';
@@ -7,11 +6,21 @@ import { Question } from '@/types/question';
 import { useBriefs } from './useBriefs';
 import { useToast } from './use-toast';
 
+export interface BriefStyle {
+  logo?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  fontFamily?: string;
+  backgroundImage?: string;
+  headerStyle?: 'default' | 'minimal' | 'branded';
+}
+
 export interface Brief {
   id: string;
   title: string;
   description: string;
   questions: Question[];
+  style?: BriefStyle;
 }
 
 export function useBriefForm(briefId?: string) {
@@ -29,6 +38,12 @@ export function useBriefForm(briefId?: string) {
       required: true
     }
   ]);
+  const [style, setStyle] = useState<BriefStyle>({
+    primaryColor: '#9b87f5',
+    secondaryColor: '#f1f0fb',
+    fontFamily: 'Inter, sans-serif',
+    headerStyle: 'default'
+  });
 
   const addQuestion = (type: Question['type']) => {
     const newQuestion: Question = {
@@ -72,7 +87,8 @@ export function useBriefForm(briefId?: string) {
       const briefData = {
         title,
         description,
-        questions
+        questions,
+        style
       };
 
       if (briefId) {
@@ -104,6 +120,9 @@ export function useBriefForm(briefId?: string) {
     setTitle(brief.title);
     setDescription(brief.description);
     setQuestions(brief.questions);
+    if (brief.style) {
+      setStyle(brief.style);
+    }
   };
 
   return {
@@ -112,6 +131,8 @@ export function useBriefForm(briefId?: string) {
     description,
     setDescription,
     questions,
+    style,
+    setStyle,
     addQuestion,
     updateQuestion,
     removeQuestion,
