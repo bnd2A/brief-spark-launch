@@ -38,7 +38,20 @@ const BriefView = () => {
           
         if (error) throw error;
         
-        setBrief(data);
+        // Parse the questions from JSON if needed
+        const parsedQuestions = Array.isArray(data.questions) ? 
+          data.questions : 
+          (typeof data.questions === 'string' ? 
+            JSON.parse(data.questions) : []);
+        
+        // Create a properly structured brief object
+        setBrief({
+          id: data.id,
+          title: data.title,
+          description: data.description || '',
+          questions: parsedQuestions,
+          style: data.style || {}
+        });
       } catch (error) {
         console.error('Error fetching brief:', error);
         toast({

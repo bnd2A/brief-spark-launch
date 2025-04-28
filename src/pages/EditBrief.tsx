@@ -64,12 +64,18 @@ const EditBrief = () => {
       }
       
       if (data) {
+        // Parse questions array if it's not already an array
+        const parsedQuestions = Array.isArray(data.questions) ? 
+          data.questions : 
+          (typeof data.questions === 'string' ? 
+            JSON.parse(data.questions) : []);
+        
         loadBrief({
           id: data.id,
           title: data.title,
           description: data.description || '',
-          questions: data.questions as any || [],
-          style: data.style as any || {}
+          questions: parsedQuestions,
+          style: data.style || {}
         });
       }
       

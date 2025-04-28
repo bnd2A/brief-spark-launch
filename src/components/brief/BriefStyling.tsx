@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BriefStyle } from '@/hooks/useBriefForm';
-import { Palette, Font, Layout, Upload, Image } from 'lucide-react';
+import { Palette, Type, Layout, Upload, Image } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -104,7 +104,7 @@ export function BriefStyling({ style, onChange }: BriefStylingProps) {
             Colors
           </TabsTrigger>
           <TabsTrigger value="typography">
-            <Font size={16} className="mr-2" /> 
+            <Type size={16} className="mr-2" /> 
             Typography
           </TabsTrigger>
           <TabsTrigger value="layout">
