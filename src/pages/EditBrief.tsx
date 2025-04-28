@@ -9,15 +9,9 @@ import { useBriefForm } from '@/hooks/useBriefForm';
 import { BriefDetails } from '@/components/brief/BriefDetails';
 import { QuestionsList } from '@/components/brief/QuestionsList';
 import { BriefPreview } from '@/components/brief/BriefPreview';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -26,7 +20,6 @@ const EditBrief = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
   const [shareEmail, setShareEmail] = useState('');
   const [canEdit, setCanEdit] = useState(false);
   
@@ -42,44 +35,43 @@ const EditBrief = () => {
     handleDragEnd,
     saveAndPreview,
     loadBrief
-  } = useBriefForm();
+  } = useBriefForm(id);
 
-  useEffect(() => {
-    // In a real app, this would fetch the brief data from an API
-    const mockLoadBrief = async () => {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+  // Fetch brief data from Supabase
+  const { isLoading } = useQuery({
+    queryKey: ['brief', id],
+    queryFn: async () => {
+      if (!id) return null;
       
-      // Mock data for the brief with the given ID
-      if (id) {
+      const { data, error } = await supabase
+        .from('briefs')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching brief:", error);
+        toast({
+          title: "Error",
+          description: "Could not fetch brief details.",
+          variant: "destructive"
+        });
+        throw error;
+      }
+      
+      if (data) {
         loadBrief({
-          id,
-          title: `Example Brief ${id}`,
-          description: 'This is a sample brief for editing purposes',
-          questions: [
-            {
-              id: '1',
-              type: 'short',
-              question: 'What is your name?',
-              required: true,
-              options: []
-            },
-            {
-              id: '2',
-              type: 'long',
-              question: 'Describe your project',
-              required: false,
-              options: []
-            }
-          ]
+          id: data.id,
+          title: data.title,
+          description: data.description || '',
+          questions: data.questions as any || []
         });
       }
       
-      setLoading(false);
-    };
-    
-    mockLoadBrief();
-  }, [id, loadBrief]);
+      return data;
+    },
+    enabled: !!id
+  });
 
   const handleSaveAndPreview = () => {
     toast({
@@ -99,7 +91,7 @@ const EditBrief = () => {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-[60vh]">

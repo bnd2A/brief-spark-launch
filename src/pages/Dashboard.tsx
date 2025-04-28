@@ -5,82 +5,49 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, FileText, Share2, Users } from "lucide-react";
+import { Plus, Search, FileText, Share2, Users, Loader2 } from "lucide-react";
 import AppLayout from "@/components/AppLayout";
-
-interface Brief {
-  id: string;
-  title: string;
-  description: string;
-  created: string;
-  responses: number;
-  shared?: boolean;
-  sharedBy?: string;
-}
-
-const mockBriefs: Brief[] = [
-  {
-    id: '1',
-    title: 'Website Redesign Brief',
-    description: 'Collecting requirements for the company website redesign project',
-    created: '2025-04-10',
-    responses: 3
-  },
-  {
-    id: '2',
-    title: 'Logo Design Questionnaire',
-    description: 'Questions to understand client brand identity for logo design',
-    created: '2025-04-15',
-    responses: 1
-  },
-  {
-    id: '3',
-    title: 'Mobile App Development',
-    description: 'Brief for gathering mobile app functional requirements',
-    created: '2025-04-20',
-    responses: 0
-  }
-];
-
-const mockSharedBriefs: Brief[] = [
-  {
-    id: '4',
-    title: 'Product Marketing Survey',
-    description: 'Feedback form for the new product launch campaign',
-    created: '2025-04-18',
-    responses: 12,
-    shared: true,
-    sharedBy: 'Sarah Johnson'
-  },
-  {
-    id: '5',
-    title: 'Client Onboarding Process',
-    description: 'Standard questions for new client intake',
-    created: '2025-04-05',
-    responses: 8,
-    shared: true,
-    sharedBy: 'Michael Chen'
-  }
-];
+import { useBriefs } from "@/hooks/useBriefs";
+import { formatDistanceToNow } from 'date-fns';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
-  const [briefs] = useState<Brief[]>(mockBriefs);
-  const [sharedBriefs] = useState<Brief[]>(mockSharedBriefs);
   const [activeTab, setActiveTab] = useState<string>('my-briefs');
+  
+  const { briefs, isLoading } = useBriefs();
+  const sharedBriefs = []; // To be implemented later
 
-  const filteredBriefs = briefs.filter(brief => 
+  const filteredBriefs = briefs?.filter(brief => 
     brief.title.toLowerCase().includes(search.toLowerCase()) || 
-    brief.description.toLowerCase().includes(search.toLowerCase())
-  );
+    brief.description?.toLowerCase().includes(search.toLowerCase())
+  ) || [];
 
-  const filteredSharedBriefs = sharedBriefs.filter(brief => 
+  const filteredSharedBriefs = sharedBriefs?.filter(brief => 
     brief.title.toLowerCase().includes(search.toLowerCase()) || 
-    brief.description.toLowerCase().includes(search.toLowerCase())
-  );
+    brief.description?.toLowerCase().includes(search.toLowerCase())
+  ) || [];
 
-  const renderBriefCards = (briefs: Brief[]) => {
+  const formatDate = (dateString: string) => {
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+    } catch (error) {
+      return 'Invalid date';
+    }
+  };
+
+  const renderBriefCards = (briefs: any[]) => {
+    if (isLoading) {
+      return (
+        <div className="text-center py-16 bg-muted/40 rounded-lg">
+          <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+            <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
+          </div>
+          <h3 className="text-lg font-medium mb-1">Loading briefs...</h3>
+        </div>
+      );
+    }
+
     if (briefs.length === 0) {
       return (
         <div className="text-center py-16 bg-muted/40 rounded-lg">
@@ -108,16 +75,16 @@ const Dashboard = () => {
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <CardTitle className="line-clamp-1">{brief.title}</CardTitle>
-                  <CardDescription className="line-clamp-2 mt-1">{brief.description}</CardDescription>
+                  <CardDescription className="line-clamp-2 mt-1">{brief.description || 'No description'}</CardDescription>
                 </div>
                 {brief.shared && <Share2 size={16} className="text-muted-foreground" />}
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-sm text-muted-foreground">
-                <span>Created: {new Date(brief.created).toLocaleDateString()}</span>
+                <span>Created: {formatDate(brief.created_at)}</span>
                 <div className="mt-1">
-                  <span className="font-medium">{brief.responses}</span> {brief.responses === 1 ? 'response' : 'responses'}
+                  <span className="font-medium">{brief.responses_count}</span> {brief.responses_count === 1 ? 'response' : 'responses'}
                 </div>
                 {brief.sharedBy && (
                   <div className="mt-2 flex items-center text-xs">

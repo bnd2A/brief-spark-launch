@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DragEndEvent } from '@dnd-kit/core';
@@ -88,8 +89,9 @@ export function useBriefForm(briefId?: string) {
         });
       }
       
-      navigate('/share/preview');
+      navigate('/app/dashboard');
     } catch (error) {
+      console.error("Error saving brief:", error);
       toast({
         title: "Error",
         description: "There was a problem saving your brief.",

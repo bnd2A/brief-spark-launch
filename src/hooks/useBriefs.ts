@@ -26,7 +26,10 @@ export const useBriefs = () => {
         .eq('archived', false)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching briefs:", error);
+        throw error;
+      }
 
       return briefs.map(brief => ({
         ...brief,
@@ -53,7 +56,10 @@ export const useBriefs = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating brief:", error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
@@ -74,7 +80,10 @@ export const useBriefs = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating brief:", error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
