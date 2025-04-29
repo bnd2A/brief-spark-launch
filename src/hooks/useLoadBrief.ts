@@ -1,20 +1,15 @@
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useBriefForm, Brief } from '@/hooks/useBriefForm';
+import { Brief } from '@/hooks/useBriefForm';
 import { useToast } from '@/hooks/use-toast';
 import { Json } from '@/integrations/supabase/types';
 
 export const useLoadBrief = (id: string | undefined) => {
   const { toast } = useToast();
-  const {
-    setTitle,
-    setDescription,
-    loadBrief
-  } = useBriefForm(id);
 
-  const { isLoading } = useQuery({
+  const { data: brief, isLoading } = useQuery({
     queryKey: ['brief', id],
     queryFn: async () => {
       if (!id) return null;
@@ -42,20 +37,23 @@ export const useLoadBrief = (id: string | undefined) => {
           (typeof data.questions === 'string' ? 
             JSON.parse(data.questions) : []);
         
-        loadBrief({
+        return {
           id: data.id,
           title: data.title,
           description: data.description || '',
           questions: parsedQuestions,
           // Explicitly cast style to BriefStyle to resolve TypeScript error
           style: (data.style as any) || {}
-        });
+        } as Brief;
       }
       
-      return data;
+      return null;
     },
     enabled: !!id
   });
 
-  return { isLoading };
+  return { 
+    brief,
+    isLoading 
+  };
 };

@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AppLayout from "@/components/AppLayout";
@@ -12,7 +12,6 @@ import { BriefPreview } from '@/components/brief/BriefPreview';
 import { BriefStyling } from '@/components/brief/BriefStyling';
 import { BriefLoading } from '@/components/brief/BriefLoading';
 import { EditBriefHeader } from '@/components/brief/EditBriefHeader';
-import { useNavigate } from 'react-router-dom';
 import { useLoadBrief } from '@/hooks/useLoadBrief';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -20,6 +19,9 @@ const EditBrief = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Load brief data from Supabase
+  const { brief, isLoading } = useLoadBrief(id);
   
   const {
     title,
@@ -34,17 +36,22 @@ const EditBrief = () => {
     removeQuestion,
     handleDragEnd,
     saveAndPreview,
+    loadBrief
   } = useBriefForm(id);
 
-  // Load brief data from Supabase
-  const { isLoading } = useLoadBrief(id);
+  // Effect to load brief data when it becomes available
+  useEffect(() => {
+    if (brief) {
+      loadBrief(brief);
+    }
+  }, [brief, loadBrief]);
 
   const handleSaveAndPreview = () => {
+    saveAndPreview();
     toast({
       title: "Brief updated",
       description: "Your brief has been updated successfully.",
     });
-    saveAndPreview();
   };
 
   if (isLoading) {

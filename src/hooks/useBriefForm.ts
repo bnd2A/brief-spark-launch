@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
@@ -28,8 +29,8 @@ export function useBriefForm(briefId?: string) {
   const { toast } = useToast();
   const { createBrief, updateBrief } = useBriefs();
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
   const [questions, setQuestions] = useState<Question[]>([
     {
       id: '1',
@@ -92,12 +93,14 @@ export function useBriefForm(briefId?: string) {
       };
 
       if (briefId) {
+        // Update existing brief
         await updateBrief.mutateAsync({ id: briefId, ...briefData });
         toast({
           title: "Brief updated",
           description: "Your brief has been updated successfully.",
         });
       } else {
+        // Create new brief
         await createBrief.mutateAsync(briefData);
         toast({
           title: "Brief created",
@@ -116,14 +119,14 @@ export function useBriefForm(briefId?: string) {
     }
   };
 
-  const loadBrief = (brief: Brief) => {
+  const loadBrief = useCallback((brief: Brief) => {
     setTitle(brief.title);
     setDescription(brief.description);
     setQuestions(brief.questions);
     if (brief.style) {
       setStyle(brief.style);
     }
-  };
+  }, []);
 
   return {
     title,
