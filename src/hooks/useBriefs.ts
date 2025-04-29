@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Brief, BriefStyle } from '@/hooks/useBriefForm';
 import { Question } from '@/types/question';
 import { Json } from '@/integrations/supabase/types';
+import { useToast } from '@/hooks/use-toast';
 
 export interface BriefWithStats extends Brief {
   created_at: string;
@@ -15,6 +16,7 @@ export interface BriefWithStats extends Brief {
 
 export const useBriefs = () => {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: briefs, isLoading } = useQuery({
     queryKey: ['briefs'],
@@ -95,10 +97,53 @@ export const useBriefs = () => {
     }
   });
 
+  const deleteBrief = useMutation({
+    mutationFn: async (briefId: string) => {
+      // First, delete all responses associated with this brief
+      const { error: responseError } = await supabase
+        .from('brief_responses')
+        .delete()
+        .eq('brief_id', briefId);
+      
+      if (responseError) {
+        console.error("Error deleting brief responses:", responseError);
+        throw responseError;
+      }
+      
+      // Then delete the brief itself
+      const { error } = await supabase
+        .from('briefs')
+        .delete()
+        .eq('id', briefId);
+      
+      if (error) {
+        console.error("Error deleting brief:", error);
+        throw error;
+      }
+      
+      return briefId;
+    },
+    onSuccess: (briefId) => {
+      queryClient.invalidateQueries({ queryKey: ['briefs'] });
+      toast({
+        title: "Brief deleted",
+        description: "Your brief has been permanently deleted",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete brief. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
   return {
     briefs,
     isLoading,
     createBrief,
-    updateBrief
+    updateBrief,
+    deleteBrief
   };
 };

@@ -1,11 +1,23 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Share2 } from "lucide-react";
+import { Share2, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BriefWithStats } from '@/hooks/useBriefs';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useBriefs } from '@/hooks/useBriefs';
 
 interface BriefCardProps {
   brief: BriefWithStats;
@@ -13,12 +25,21 @@ interface BriefCardProps {
 
 const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
   const navigate = useNavigate();
+  const { deleteBrief } = useBriefs();
   
   const formatDate = (dateString: string) => {
     try {
       return formatDistanceToNow(new Date(dateString), { addSuffix: true });
     } catch (error) {
       return 'Invalid date';
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteBrief.mutateAsync(brief.id);
+    } catch (error) {
+      console.error("Error deleting brief:", error);
     }
   };
 
@@ -50,13 +71,46 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
         </div>
       </CardContent>
       <CardFooter className="flex justify-between border-t pt-4 pb-3">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => navigate(`/app/edit/${brief.id}`)}
-        >
-          Edit
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => navigate(`/app/edit/${brief.id}`)}
+          >
+            Edit
+          </Button>
+          
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 size={16} />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the brief
+                  "{brief.title}" and all of its associated responses.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+        
         <Button 
           variant="secondary" 
           size="sm" 
