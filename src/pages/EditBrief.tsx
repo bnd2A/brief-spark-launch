@@ -75,7 +75,8 @@ const EditBrief = () => {
           title: data.title,
           description: data.description || '',
           questions: parsedQuestions,
-          style: data.style || {}
+          // Explicitly cast style to BriefStyle to resolve TypeScript error
+          style: (data.style as any) || {}
         });
       }
       

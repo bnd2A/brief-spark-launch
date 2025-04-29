@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -50,7 +49,8 @@ const BriefView = () => {
           title: data.title,
           description: data.description || '',
           questions: parsedQuestions,
-          style: data.style || {}
+          // Explicitly cast style to BriefStyle to resolve TypeScript error
+          style: (data.style as any) || {}
         });
       } catch (error) {
         console.error('Error fetching brief:', error);
@@ -97,7 +97,7 @@ const BriefView = () => {
     );
   }
 
-  const style = brief.style || {};
+  const style = brief?.style || {};
   
   const customStyles = {
     fontFamily: style.fontFamily || 'Inter, sans-serif',

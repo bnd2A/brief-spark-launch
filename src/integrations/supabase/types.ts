@@ -48,6 +48,7 @@ export type Database = {
           description: string | null
           id: string
           questions: Json
+          style: Json | null
           title: string
           updated_at: string | null
           user_id: string
@@ -58,6 +59,7 @@ export type Database = {
           description?: string | null
           id?: string
           questions: Json
+          style?: Json | null
           title: string
           updated_at?: string | null
           user_id: string
@@ -68,6 +70,7 @@ export type Database = {
           description?: string | null
           id?: string
           questions?: Json
+          style?: Json | null
           title?: string
           updated_at?: string | null
           user_id?: string
