@@ -103,6 +103,7 @@ export function QuestionPreview({ question, primaryColor = '#9b87f5' }: Question
           style={{ borderColor: primaryColor }}
         >
           <div className="text-center text-sm text-muted-foreground">
+            <Upload size={18} className="mx-auto mb-2" />
             File upload field
           </div>
         </div>

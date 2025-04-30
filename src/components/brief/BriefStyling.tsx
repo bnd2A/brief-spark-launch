@@ -44,7 +44,7 @@ export function BriefStyling({ style, onChange }: BriefStylingProps) {
     onChange({ ...style, ...updates });
   };
 
-  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, fileType: 'logo' | 'background') => {
     try {
       if (!event.target.files || event.target.files.length === 0) {
         return;
@@ -53,10 +53,34 @@ export function BriefStyling({ style, onChange }: BriefStylingProps) {
       const file = event.target.files[0];
       setUploading(true);
       
+      // Check file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Maximum file size is 2MB",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Generate a unique file name
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      const filePath = `logos/${fileName}`;
+      const filePath = `${fileType}s/${fileName}`;
+      
+      // Create bucket if it doesn't exist
+      const { data: bucketData, error: bucketError } = await supabase.storage
+        .getBucket('brief-assets');
+        
+      if (bucketError && bucketError.message.includes('The resource was not found')) {
+        const { error: createError } = await supabase.storage.createBucket('brief-assets', {
+          public: true
+        });
+        
+        if (createError) {
+          throw createError;
+        }
+      }
       
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
@@ -72,16 +96,21 @@ export function BriefStyling({ style, onChange }: BriefStylingProps) {
         .from('brief-assets')
         .getPublicUrl(filePath);
         
-      updateStyle({ logo: data.publicUrl });
+      if (fileType === 'logo') {
+        updateStyle({ logo: data.publicUrl });
+      } else {
+        updateStyle({ backgroundImage: data.publicUrl });
+      }
+      
       toast({
-        title: "Logo uploaded",
-        description: "Your logo has been uploaded successfully."
+        title: `${fileType === 'logo' ? 'Logo' : 'Background'} uploaded`,
+        description: `Your ${fileType} has been uploaded successfully.`
       });
     } catch (error) {
-      console.error("Error uploading logo:", error);
+      console.error(`Error uploading ${fileType}:`, error);
       toast({
         title: "Upload failed",
-        description: "There was a problem uploading your logo.",
+        description: `There was a problem uploading your ${fileType}.`,
         variant: "destructive"
       });
     } finally {
@@ -89,8 +118,20 @@ export function BriefStyling({ style, onChange }: BriefStylingProps) {
     }
   };
 
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    handleFileUpload(event, 'logo');
+  };
+
+  const handleBackgroundUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    handleFileUpload(event, 'background');
+  };
+
   const handleRemoveLogo = () => {
     updateStyle({ logo: undefined });
+  };
+
+  const handleRemoveBackground = () => {
+    updateStyle({ backgroundImage: undefined });
   };
 
   return (
@@ -250,15 +291,48 @@ export function BriefStyling({ style, onChange }: BriefStylingProps) {
             )}
           </div>
           
-          <div>
-            <Label htmlFor="backgroundImage" className="mb-1 block">Background image URL</Label>
-            <Input 
-              id="backgroundImage"
-              type="text" 
-              placeholder="https://example.com/image.jpg" 
-              value={style.backgroundImage || ''} 
-              onChange={(e) => updateStyle({ backgroundImage: e.target.value })}
-            />
+          <div className="mt-6">
+            <Label className="mb-1 block">Background image</Label>
+            {style.backgroundImage ? (
+              <div className="flex flex-col items-center p-4 border rounded-md">
+                <img 
+                  src={style.backgroundImage} 
+                  alt="Background image" 
+                  className="max-h-40 w-full object-cover mb-4" 
+                />
+                <Button 
+                  variant="outline" 
+                  onClick={handleRemoveBackground}
+                >
+                  Remove background
+                </Button>
+              </div>
+            ) : (
+              <div className="p-6 border border-dashed rounded-md text-center">
+                <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                <p className="text-sm mb-2">Upload a background image</p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Recommended: JPG or PNG, max 2MB
+                </p>
+                <div>
+                  <Button 
+                    variant="outline" 
+                    disabled={uploading}
+                    onClick={() => document.getElementById('background-upload')?.click()}
+                  >
+                    {uploading ? 'Uploading...' : 'Upload background'}
+                  </Button>
+                  <Input
+                    id="background-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleBackgroundUpload}
+                    disabled={uploading}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
