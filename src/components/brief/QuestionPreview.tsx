@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Upload } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 interface QuestionPreviewProps {
   question: Question;
@@ -99,13 +100,29 @@ export function QuestionPreview({ question, primaryColor = '#9b87f5' }: Question
     return (
       <div className="pl-4">
         <Label className="text-xs mb-1">{question.question}</Label>
-        <div 
-          className="h-20 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/30 mt-1"
-          style={{ borderColor: primaryColor }}
-        >
-          <div className="text-center text-sm text-muted-foreground">
-            <Upload size={18} className="mx-auto mb-2" />
-            File upload field
+        <div className="space-y-2">
+          <div 
+            className="h-20 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/30 mt-1"
+            style={{ borderColor: primaryColor }}
+          >
+            <div className="text-center text-sm text-muted-foreground">
+              <Upload size={18} className="mx-auto mb-2" />
+              File upload field
+            </div>
+          </div>
+          {/* Preview of what the progress bar would look like */}
+          <div className="mt-1 opacity-50">
+            <div className="flex justify-between text-xs mb-1">
+              <span>Upload preview</span>
+              <span>0%</span>
+            </div>
+            <Progress 
+              value={0} 
+              className="h-1.5" 
+              style={{
+                '--primary-color': primaryColor,
+              } as React.CSSProperties}
+            />
           </div>
         </div>
       </div>
