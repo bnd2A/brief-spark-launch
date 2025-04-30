@@ -111,16 +111,16 @@ export function QuestionPreview({ question, primaryColor = '#9b87f5' }: Question
             </div>
           </div>
           {/* Preview of what the progress bar would look like */}
-          <div className="mt-1 opacity-50">
+          <div className="mt-1">
             <div className="flex justify-between text-xs mb-1">
               <span>Upload preview</span>
-              <span>0%</span>
+              <span>75%</span>
             </div>
             <Progress 
-              value={0} 
+              value={75} 
               className="h-1.5" 
               style={{
-                '--primary-color': primaryColor,
+                '--primary': primaryColor,
               } as React.CSSProperties}
             />
           </div>

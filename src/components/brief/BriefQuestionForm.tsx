@@ -26,6 +26,15 @@ export const BriefQuestionForm: React.FC<BriefQuestionFormProps> = ({
   const { toast } = useToast();
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, string>>({});
+  const [formResponses, setFormResponses] = useState<Record<string, any>>({});
+
+  // Handle input changes for text, radio, and checkbox fields
+  const handleInputChange = (questionId: string, value: any) => {
+    setFormResponses(prev => ({
+      ...prev,
+      [questionId]: value
+    }));
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, questionId: string) => {
     try {
@@ -67,26 +76,62 @@ export const BriefQuestionForm: React.FC<BriefQuestionFormProps> = ({
         }
       }
       
-      // Upload to Supabase Storage with progress tracking
-      const { error: uploadError } = await supabase.storage
+      // Create an upload controller to track progress
+      const uploadController = new AbortController();
+      
+      // Start tracking upload progress manually
+      const totalSize = file.size;
+      let loadedSize = 0;
+      let lastReportedProgress = 0;
+      
+      const updateProgress = (loaded: number) => {
+        loadedSize = loaded;
+        const percent = Math.round((loadedSize / totalSize) * 100);
+        
+        // Only update if progress has changed by at least 1%
+        if (percent > lastReportedProgress) {
+          lastReportedProgress = percent;
+          setUploadProgress(prev => ({ ...prev, [questionId]: percent }));
+        }
+      };
+      
+      // Start a read stream from the file
+      const reader = new FileReader();
+      reader.onprogress = (event) => {
+        if (event.lengthComputable) {
+          updateProgress(event.loaded);
+        }
+      };
+      
+      // Read the file as an array buffer (just to track progress)
+      reader.readAsArrayBuffer(file);
+      
+      // Upload to Supabase Storage
+      const { error: uploadError, data } = await supabase.storage
         .from('brief-assets')
         .upload(filePath, file, {
-          onUploadProgress: (progress) => {
-            const percent = Math.round((progress.loaded / progress.total) * 100);
-            setUploadProgress(prev => ({ ...prev, [questionId]: percent }));
-          }
+          cacheControl: '3600',
+          upsert: false
         });
         
       if (uploadError) {
         throw uploadError;
       }
       
+      // Simulate 100% progress in case the reader didn't complete
+      setUploadProgress(prev => ({ ...prev, [questionId]: 100 }));
+      
       // Get the public URL
-      const { data } = supabase.storage
+      const { data: urlData } = supabase.storage
         .from('brief-assets')
         .getPublicUrl(filePath);
         
-      setUploadedFiles(prev => ({ ...prev, [questionId]: data.publicUrl }));
+      // Store the URL in the form responses
+      setUploadedFiles(prev => ({ ...prev, [questionId]: urlData.publicUrl }));
+      setFormResponses(prev => ({
+        ...prev,
+        [questionId]: urlData.publicUrl
+      }));
       
       toast({
         title: "File uploaded",
@@ -111,8 +156,70 @@ export const BriefQuestionForm: React.FC<BriefQuestionFormProps> = ({
     }
   };
 
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      // Get brief ID from URL
+      const briefId = window.location.pathname.split('/').pop();
+      
+      if (!briefId) {
+        throw new Error('Brief ID not found');
+      }
+      
+      // Get client information for better tracking
+      const clientInfo = {
+        userAgent: navigator.userAgent,
+        language: navigator.language,
+        timestamp: new Date().toISOString(),
+        referrer: document.referrer,
+        screenSize: `${window.screen.width}x${window.screen.height}`
+      };
+      
+      // Optional: collect respondent email if provided in the form
+      const emailQuestion = questions.find(q => 
+        q.type === 'short' && 
+        q.question.toLowerCase().includes('email')
+      );
+      
+      const respondentEmail = emailQuestion ? formResponses[emailQuestion.id] : null;
+      
+      // Prepare the response data
+      const responseData = {
+        brief_id: briefId,
+        answers: { 
+          ...formResponses,
+          _clientInfo: clientInfo
+        },
+        respondent_email: respondentEmail
+      };
+      
+      // Save response to Supabase
+      const { error } = await supabase
+        .from('brief_responses')
+        .insert(responseData);
+      
+      if (error) throw error;
+      
+      // Call the original onSubmit handler
+      onSubmit(e);
+      
+      // Clear form data
+      setFormResponses({});
+      setUploadedFiles({});
+      
+    } catch (error) {
+      console.error('Error submitting brief response:', error);
+      toast({
+        title: 'Error submitting form',
+        description: 'There was a problem submitting your response. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
   return (
-    <form onSubmit={onSubmit} className="p-6 md:p-8 space-y-8">
+    <form onSubmit={handleFormSubmit} className="p-6 md:p-8 space-y-8">
       {questions.map((question) => (
         <div key={question.id} className="space-y-2">
           <div className="flex items-start">
@@ -125,6 +232,8 @@ export const BriefQuestionForm: React.FC<BriefQuestionFormProps> = ({
           {question.type === 'short' && (
             <Input 
               required={question.required}
+              value={formResponses[question.id] || ''}
+              onChange={(e) => handleInputChange(question.id, e.target.value)}
               style={{
                 borderColor: style.primaryColor,
                 '--ring': style.primaryColor,
@@ -134,7 +243,9 @@ export const BriefQuestionForm: React.FC<BriefQuestionFormProps> = ({
           
           {question.type === 'long' && (
             <Textarea 
-              required={question.required} 
+              required={question.required}
+              value={formResponses[question.id] || ''}
+              onChange={(e) => handleInputChange(question.id, e.target.value)}
               rows={4}
               style={{
                 borderColor: style.primaryColor,
@@ -144,7 +255,10 @@ export const BriefQuestionForm: React.FC<BriefQuestionFormProps> = ({
           )}
           
           {question.type === 'multiple' && question.options && (
-            <RadioGroup defaultValue={question.options[0]}>
+            <RadioGroup 
+              value={formResponses[question.id]}
+              onValueChange={(value) => handleInputChange(question.id, value)}
+            >
               {question.options.map((option: string, idx: number) => (
                 <div key={idx} className="flex items-center space-x-2">
                   <RadioGroupItem 
@@ -167,6 +281,15 @@ export const BriefQuestionForm: React.FC<BriefQuestionFormProps> = ({
                 <div key={idx} className="flex items-center space-x-2">
                   <Checkbox 
                     id={`${question.id}-${idx}`}
+                    checked={(formResponses[question.id] || []).includes(option)}
+                    onCheckedChange={(checked) => {
+                      const currentValues = formResponses[question.id] || [];
+                      if (checked) {
+                        handleInputChange(question.id, [...currentValues, option]);
+                      } else {
+                        handleInputChange(question.id, currentValues.filter((v: string) => v !== option));
+                      }
+                    }}
                     style={{
                       borderColor: style.primaryColor,
                       '--ring': style.primaryColor,
