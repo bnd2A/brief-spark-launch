@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { BriefStyle } from '@/hooks/useBriefForm';
-import { Upload } from 'lucide-react';
+import { Upload, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,6 +17,7 @@ interface MediaUploaderProps {
 export function MediaUploader({ type, value, onChange }: MediaUploaderProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -26,6 +27,7 @@ export function MediaUploader({ type, value, onChange }: MediaUploaderProps) {
       
       const file = event.target.files[0];
       setUploading(true);
+      setUploadSuccess(false);
       
       // Check file size (max 2MB)
       if (file.size > 2 * 1024 * 1024) {
@@ -71,6 +73,7 @@ export function MediaUploader({ type, value, onChange }: MediaUploaderProps) {
         .getPublicUrl(filePath);
         
       onChange(data.publicUrl);
+      setUploadSuccess(true);
       
       toast({
         title: `${type === 'logo' ? 'Logo' : 'Background'} uploaded`,
@@ -90,6 +93,7 @@ export function MediaUploader({ type, value, onChange }: MediaUploaderProps) {
 
   const handleRemove = () => {
     onChange(undefined);
+    setUploadSuccess(false);
   };
 
   const getTitle = () => {
@@ -119,18 +123,32 @@ export function MediaUploader({ type, value, onChange }: MediaUploaderProps) {
         </div>
       ) : (
         <div className="p-6 border border-dashed rounded-md text-center">
-          <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-          <p className="text-sm mb-2">Upload {type === 'logo' ? 'your logo' : 'a background image'}</p>
-          <p className="text-xs text-muted-foreground mb-4">
-            Recommended: {getRecommendation()}, max 2MB
-          </p>
+          {uploadSuccess ? (
+            <div className="flex flex-col items-center">
+              <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center mb-2">
+                <Check className="h-6 w-6 text-green-600" />
+              </div>
+              <p className="text-sm font-medium">Upload successful!</p>
+              <p className="text-xs text-muted-foreground mb-4">
+                Your file has been uploaded successfully
+              </p>
+            </div>
+          ) : (
+            <>
+              <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+              <p className="text-sm mb-2">Upload {type === 'logo' ? 'your logo' : 'a background image'}</p>
+              <p className="text-xs text-muted-foreground mb-4">
+                Recommended: {getRecommendation()}, max 2MB
+              </p>
+            </>
+          )}
           <div>
             <Button 
               variant="outline" 
               disabled={uploading}
               onClick={() => document.getElementById(`${type}-upload`)?.click()}
             >
-              {uploading ? 'Uploading...' : `Upload ${type}`}
+              {uploading ? 'Uploading...' : uploadSuccess ? 'Upload another' : `Upload ${type}`}
             </Button>
             <Input
               id={`${type}-upload`}

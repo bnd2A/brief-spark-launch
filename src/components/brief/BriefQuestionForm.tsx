@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { BriefStyle } from '@/hooks/useBriefForm';
+import { Upload } from 'lucide-react';
 
 interface BriefQuestionFormProps {
   questions: any[];
@@ -93,6 +94,7 @@ export const BriefQuestionForm: React.FC<BriefQuestionFormProps> = ({
                   borderColor: style.primaryColor
                 }}>
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
                     <p className="mb-2 text-sm text-muted-foreground">
                       <span className="font-semibold">Click to upload</span> or drag and drop
                     </p>

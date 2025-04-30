@@ -100,7 +100,7 @@ export function QuestionPreview({ question, primaryColor = '#9b87f5' }: Question
       <div className="pl-4">
         <Label className="text-xs mb-1">{question.question}</Label>
         <div 
-          className="h-20 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/30"
+          className="h-20 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/30 mt-1"
           style={{ borderColor: primaryColor }}
         >
           <div className="text-center text-sm text-muted-foreground">
