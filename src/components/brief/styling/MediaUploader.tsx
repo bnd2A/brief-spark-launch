@@ -7,6 +7,7 @@ import { BriefStyle } from '@/hooks/useBriefForm';
 import { Upload, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Progress } from '@/components/ui/progress';
 
 interface MediaUploaderProps {
   type: 'logo' | 'background';
@@ -18,6 +19,7 @@ export function MediaUploader({ type, value, onChange }: MediaUploaderProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -28,6 +30,7 @@ export function MediaUploader({ type, value, onChange }: MediaUploaderProps) {
       const file = event.target.files[0];
       setUploading(true);
       setUploadSuccess(false);
+      setUploadProgress(0);
       
       // Check file size (max 2MB)
       if (file.size > 2 * 1024 * 1024) {
@@ -36,6 +39,7 @@ export function MediaUploader({ type, value, onChange }: MediaUploaderProps) {
           description: "Maximum file size is 2MB",
           variant: "destructive"
         });
+        setUploading(false);
         return;
       }
 
@@ -44,21 +48,16 @@ export function MediaUploader({ type, value, onChange }: MediaUploaderProps) {
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `${type}s/${fileName}`;
       
-      // Make sure the storage bucket exists
-      const { data: bucketExists } = await supabase.storage.getBucket('brief-assets');
-      
-      if (!bucketExists) {
-        // Create bucket if it doesn't exist
-        const { error: createBucketError } = await supabase.storage.createBucket('brief-assets', {
-          public: true,
-          fileSizeLimit: 2097152, // 2MB in bytes
-        });
-        
-        if (createBucketError) {
-          console.error("Error creating bucket:", createBucketError);
-          throw new Error("Could not create storage bucket");
+      // Start progress simulation
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += 10;
+        if (progress <= 90) {
+          setUploadProgress(progress);
+        } else {
+          clearInterval(progressInterval);
         }
-      }
+      }, 300);
       
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
@@ -68,10 +67,16 @@ export function MediaUploader({ type, value, onChange }: MediaUploaderProps) {
           upsert: true
         });
         
+      // Clear the progress simulation
+      clearInterval(progressInterval);
+        
       if (uploadError) {
         console.error("Supabase upload error:", uploadError);
         throw new Error(uploadError.message);
       }
+      
+      // Set progress to 100% when upload is complete
+      setUploadProgress(100);
       
       // Get the public URL
       const { data } = supabase.storage
@@ -85,6 +90,9 @@ export function MediaUploader({ type, value, onChange }: MediaUploaderProps) {
         title: `${type === 'logo' ? 'Logo' : 'Background'} uploaded`,
         description: `Your ${type} has been uploaded successfully.`
       });
+      
+      // Reset progress after a brief delay
+      setTimeout(() => setUploadProgress(0), 2000);
     } catch (error) {
       console.error(`Error uploading ${type}:`, error);
       toast({
@@ -148,6 +156,23 @@ export function MediaUploader({ type, value, onChange }: MediaUploaderProps) {
               </p>
             </>
           )}
+          
+          {uploadProgress > 0 && (
+            <div className="w-full mb-4">
+              <div className="flex justify-between text-xs mb-1">
+                <span>Uploading...</span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <Progress 
+                value={uploadProgress} 
+                className="h-2" 
+                style={{
+                  '--primary': '#9b87f5',
+                } as React.CSSProperties}
+              />
+            </div>
+          )}
+          
           <div>
             <Button 
               variant="outline" 
