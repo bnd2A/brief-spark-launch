@@ -59,54 +59,38 @@ export const BriefQuestionForm: React.FC<BriefQuestionFormProps> = ({
       
       // Generate a unique file name
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `brief-uploads/${fileName}`;
       
-      // Create bucket if it doesn't exist
-      const { data: bucketData, error: bucketError } = await supabase.storage
-        .getBucket('brief-assets');
-        
-      if (bucketError && bucketError.message.includes('The resource was not found')) {
-        const { error: createError } = await supabase.storage.createBucket('brief-assets', {
-          public: true
+      // Make sure the storage bucket exists
+      const { data: bucketExists } = await supabase.storage.getBucket('brief-assets');
+      
+      if (!bucketExists) {
+        // Create bucket if it doesn't exist
+        const { error: createBucketError } = await supabase.storage.createBucket('brief-assets', {
+          public: true,
+          fileSizeLimit: 10485760, // 10MB in bytes
         });
         
-        if (createError) {
-          throw createError;
+        if (createBucketError) {
+          console.error("Error creating bucket:", createBucketError);
+          throw new Error("Could not create storage bucket");
         }
       }
       
-      // Create an upload controller to track progress
-      const uploadController = new AbortController();
-      
-      // Start tracking upload progress manually
-      const totalSize = file.size;
-      let loadedSize = 0;
-      let lastReportedProgress = 0;
-      
-      const updateProgress = (loaded: number) => {
-        loadedSize = loaded;
-        const percent = Math.round((loadedSize / totalSize) * 100);
-        
-        // Only update if progress has changed by at least 1%
-        if (percent > lastReportedProgress) {
-          lastReportedProgress = percent;
-          setUploadProgress(prev => ({ ...prev, [questionId]: percent }));
+      // Mock progress updates since Supabase doesn't provide real-time progress
+      // Start simulating progress
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += 5;
+        if (progress <= 90) { // Only go up to 90% with the simulation
+          setUploadProgress(prev => ({ ...prev, [questionId]: progress }));
+        } else {
+          clearInterval(progressInterval);
         }
-      };
+      }, 200);
       
-      // Start a read stream from the file
-      const reader = new FileReader();
-      reader.onprogress = (event) => {
-        if (event.lengthComputable) {
-          updateProgress(event.loaded);
-        }
-      };
-      
-      // Read the file as an array buffer (just to track progress)
-      reader.readAsArrayBuffer(file);
-      
-      // Upload to Supabase Storage
+      // Upload the file to Supabase Storage
       const { error: uploadError, data } = await supabase.storage
         .from('brief-assets')
         .upload(filePath, file, {
@@ -114,18 +98,26 @@ export const BriefQuestionForm: React.FC<BriefQuestionFormProps> = ({
           upsert: false
         });
         
+      // Clear the progress simulation
+      clearInterval(progressInterval);
+        
       if (uploadError) {
-        throw uploadError;
+        console.error("Supabase upload error:", uploadError);
+        throw new Error(uploadError.message || "Upload failed");
       }
       
-      // Simulate 100% progress in case the reader didn't complete
+      // Set progress to 100% when upload is complete
       setUploadProgress(prev => ({ ...prev, [questionId]: 100 }));
       
-      // Get the public URL
+      // Get the public URL of the uploaded file
       const { data: urlData } = supabase.storage
         .from('brief-assets')
         .getPublicUrl(filePath);
         
+      if (!urlData || !urlData.publicUrl) {
+        throw new Error("Could not get public URL for uploaded file");
+      }
+      
       // Store the URL in the form responses
       setUploadedFiles(prev => ({ ...prev, [questionId]: urlData.publicUrl }));
       setFormResponses(prev => ({
@@ -137,15 +129,8 @@ export const BriefQuestionForm: React.FC<BriefQuestionFormProps> = ({
         title: "File uploaded",
         description: "Your file has been uploaded successfully."
       });
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      toast({
-        title: "Upload failed",
-        description: "There was a problem uploading your file.",
-        variant: "destructive"
-      });
-    } finally {
-      // Reset progress after a few seconds to provide feedback
+      
+      // Reset progress after a few seconds
       setTimeout(() => {
         setUploadProgress(prev => {
           const newProgress = { ...prev };
@@ -153,6 +138,22 @@ export const BriefQuestionForm: React.FC<BriefQuestionFormProps> = ({
           return newProgress;
         });
       }, 3000);
+      
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      
+      // Reset progress on error
+      setUploadProgress(prev => {
+        const newProgress = { ...prev };
+        delete newProgress[questionId];
+        return newProgress;
+      });
+      
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "There was a problem uploading your file.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -207,6 +208,11 @@ export const BriefQuestionForm: React.FC<BriefQuestionFormProps> = ({
       // Clear form data
       setFormResponses({});
       setUploadedFiles({});
+      
+      toast({
+        title: 'Form submitted',
+        description: 'Thank you for your response!',
+      });
       
     } catch (error) {
       console.error('Error submitting brief response:', error);
@@ -337,6 +343,7 @@ export const BriefQuestionForm: React.FC<BriefQuestionFormProps> = ({
                     type="file" 
                     className="hidden" 
                     onChange={(e) => handleFileUpload(e, question.id)}
+                    accept=".pdf,.png,.jpg,.jpeg,.docx"
                   />
                 </label>
               </div>
@@ -351,7 +358,7 @@ export const BriefQuestionForm: React.FC<BriefQuestionFormProps> = ({
                     value={uploadProgress[question.id]} 
                     className="h-2" 
                     style={{
-                      '--primary-color': style.primaryColor,
+                      '--primary': style.primaryColor,
                     } as React.CSSProperties}
                   />
                 </div>

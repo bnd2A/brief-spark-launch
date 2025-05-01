@@ -41,30 +41,36 @@ export function MediaUploader({ type, value, onChange }: MediaUploaderProps) {
 
       // Generate a unique file name
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `${type}s/${fileName}`;
       
-      // Create bucket if it doesn't exist
-      const { data: bucketData, error: bucketError } = await supabase.storage
-        .getBucket('brief-assets');
-        
-      if (bucketError && bucketError.message.includes('The resource was not found')) {
-        const { error: createError } = await supabase.storage.createBucket('brief-assets', {
-          public: true
+      // Make sure the storage bucket exists
+      const { data: bucketExists } = await supabase.storage.getBucket('brief-assets');
+      
+      if (!bucketExists) {
+        // Create bucket if it doesn't exist
+        const { error: createBucketError } = await supabase.storage.createBucket('brief-assets', {
+          public: true,
+          fileSizeLimit: 2097152, // 2MB in bytes
         });
         
-        if (createError) {
-          throw createError;
+        if (createBucketError) {
+          console.error("Error creating bucket:", createBucketError);
+          throw new Error("Could not create storage bucket");
         }
       }
       
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('brief-assets')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
         
       if (uploadError) {
-        throw uploadError;
+        console.error("Supabase upload error:", uploadError);
+        throw new Error(uploadError.message);
       }
       
       // Get the public URL
@@ -83,7 +89,7 @@ export function MediaUploader({ type, value, onChange }: MediaUploaderProps) {
       console.error(`Error uploading ${type}:`, error);
       toast({
         title: "Upload failed",
-        description: `There was a problem uploading your ${type}.`,
+        description: error instanceof Error ? error.message : `There was a problem uploading your ${type}.`,
         variant: "destructive"
       });
     } finally {
