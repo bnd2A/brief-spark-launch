@@ -29,7 +29,15 @@ export const useBriefData = (briefId: string | undefined) => {
           .eq('id', briefId)
           .single();
           
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching brief:', error);
+          throw error;
+        }
+        
+        if (!data) {
+          console.error('No brief found with ID:', briefId);
+          return;
+        }
         
         // Parse the questions from JSON if needed
         const parsedQuestions = Array.isArray(data.questions) ? 

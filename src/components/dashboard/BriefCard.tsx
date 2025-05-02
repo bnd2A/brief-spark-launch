@@ -44,6 +44,12 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
     }
   };
 
+  // Handle view button click - navigate to shared brief view
+  const handleView = () => {
+    // Open in a new tab
+    window.open(`/share/${brief.id}`, '_blank');
+  };
+
   return (
     <Card className="overflow-hidden flex flex-col">
       <CardHeader className="pb-3">
@@ -120,7 +126,7 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
         <Button 
           variant="secondary" 
           size="sm" 
-          onClick={() => navigate(`/share/${brief.id}`)} 
+          onClick={handleView} 
         >
           View
         </Button>
