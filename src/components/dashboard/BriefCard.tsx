@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Share2, Trash2, Copy } from "lucide-react";
+import { Share2, Trash2, Copy, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -71,7 +71,8 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
       <CardContent>
         <div className="text-sm text-muted-foreground">
           <span>Created: {formatDate(brief.created_at)}</span>
-          <div className="mt-1">
+          <div className="mt-1 flex items-center">
+            <MessageSquare size={14} className="mr-1" />
             <span className="font-medium">{brief.responses_count}</span> {brief.responses_count === 1 ? 'response' : 'responses'}
           </div>
           {brief.sharedBy && (
@@ -101,6 +102,18 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
             <Copy size={14} />
             Copy Link
           </Button>
+          
+          {brief.responses_count > 0 && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate(`/app/responses/${brief.id}`)}
+              className="flex items-center gap-1"
+            >
+              <MessageSquare size={14} />
+              View Responses
+            </Button>
+          )}
           
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -133,13 +146,25 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
           </AlertDialog>
         </div>
         
-        <Button 
-          variant="secondary" 
-          size="sm" 
-          onClick={() => navigate(`/share/${brief.id}`)} 
-        >
-          View & Share
-        </Button>
+        <div className="flex gap-2">
+          {brief.responses_count > 0 ? (
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={() => navigate(`/app/responses/${brief.id}`)}
+            >
+              View Responses
+            </Button>
+          ) : (
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={() => navigate(`/share/${brief.id}`)} 
+            >
+              View & Share
+            </Button>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );
