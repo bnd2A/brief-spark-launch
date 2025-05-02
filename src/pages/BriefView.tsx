@@ -8,6 +8,8 @@ import { BriefLoading } from '@/components/brief/BriefLoading';
 import { BriefNotFound } from '@/components/brief/BriefNotFound';
 import { BriefHeader } from '@/components/brief/BriefHeader';
 import { BriefQuestionForm } from '@/components/brief/BriefQuestionForm';
+import { Copy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const BriefView = () => {
   const { id } = useParams();
@@ -19,6 +21,15 @@ const BriefView = () => {
     toast({
       title: "Brief Submitted",
       description: "Thank you! Your response has been recorded."
+    });
+  };
+
+  const copyLinkToClipboard = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    toast({
+      title: "Link Copied",
+      description: "The brief link has been copied to your clipboard."
     });
   };
 
@@ -55,6 +66,18 @@ const BriefView = () => {
         <div className="text-center mb-8">
           <div className="mb-1">Powered by</div>
           <h2 className="font-bold text-2xl">Briefly</h2>
+        </div>
+        
+        <div className="mb-4 flex justify-end">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={copyLinkToClipboard}
+            className="gap-2"
+          >
+            <Copy size={16} />
+            Copy Link
+          </Button>
         </div>
         
         <Card className="overflow-hidden">
