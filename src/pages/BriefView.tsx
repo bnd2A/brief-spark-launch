@@ -27,7 +27,6 @@ const BriefView = () => {
   }
 
   if (!brief) {
-    console.log('Brief not found with ID:', id);
     return <BriefNotFound />;
   }
 

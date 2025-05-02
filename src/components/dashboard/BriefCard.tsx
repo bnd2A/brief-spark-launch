@@ -18,7 +18,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useBriefs } from '@/hooks/useBriefs';
-import { ShareBriefDialog } from './ShareBriefDialog';
 
 interface BriefCardProps {
   brief: BriefWithStats;
@@ -44,14 +43,8 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
     }
   };
 
-  // Handle view button click - navigate to shared brief view
-  const handleView = () => {
-    // Open in a new tab
-    window.open(`/share/${brief.id}`, '_blank');
-  };
-
   return (
-    <Card className="overflow-hidden flex flex-col">
+    <Card className="overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div className="flex-1">
@@ -63,7 +56,7 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
           {brief.shared && <Share2 size={16} className="text-muted-foreground" />}
         </div>
       </CardHeader>
-      <CardContent className="flex-grow">
+      <CardContent>
         <div className="text-sm text-muted-foreground">
           <span>Created: {formatDate(brief.created_at)}</span>
           <div className="mt-1">
@@ -77,7 +70,7 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
           )}
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between border-t pt-4 pb-3 gap-2 flex-wrap">
+      <CardFooter className="flex justify-between border-t pt-4 pb-3">
         <div className="flex gap-2">
           <Button 
             variant="outline" 
@@ -116,19 +109,14 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          
-          <ShareBriefDialog 
-            briefId={brief.id} 
-            briefTitle={brief.title}
-          />
         </div>
         
         <Button 
           variant="secondary" 
           size="sm" 
-          onClick={handleView} 
+          onClick={() => navigate(`/share/${brief.id}`)} 
         >
-          View
+          View & Share
         </Button>
       </CardFooter>
     </Card>
