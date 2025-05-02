@@ -18,6 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useBriefs } from '@/hooks/useBriefs';
+import { ShareBriefDialog } from './ShareBriefDialog';
 
 interface BriefCardProps {
   brief: BriefWithStats;
@@ -44,7 +45,7 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
   };
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div className="flex-1">
@@ -56,7 +57,7 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
           {brief.shared && <Share2 size={16} className="text-muted-foreground" />}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow">
         <div className="text-sm text-muted-foreground">
           <span>Created: {formatDate(brief.created_at)}</span>
           <div className="mt-1">
@@ -70,7 +71,7 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
           )}
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between border-t pt-4 pb-3">
+      <CardFooter className="flex justify-between border-t pt-4 pb-3 gap-2 flex-wrap">
         <div className="flex gap-2">
           <Button 
             variant="outline" 
@@ -109,6 +110,11 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          
+          <ShareBriefDialog 
+            briefId={brief.id} 
+            briefTitle={brief.title}
+          />
         </div>
         
         <Button 
@@ -116,7 +122,7 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
           size="sm" 
           onClick={() => navigate(`/share/${brief.id}`)} 
         >
-          View & Share
+          View
         </Button>
       </CardFooter>
     </Card>
