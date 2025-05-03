@@ -19,6 +19,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useBriefs } from '@/hooks/useBriefs';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface BriefCardProps {
   brief: BriefWithStats;
@@ -84,33 +90,38 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
       </CardContent>
       <CardFooter className="border-t pt-4 pb-3 flex justify-between">
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => navigate(`/app/edit/${brief.id}`)}
-          >
-            Edit
-          </Button>
-          
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={copyLinkToClipboard}
-            title="Copy share link"
-          >
-            <Copy size={14} />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate(`/app/edit/${brief.id}`)}
+              >
+                Edit
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Edit this brief</p>
+            </TooltipContent>
+          </Tooltip>
           
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="text-destructive hover:text-destructive"
-                title="Delete brief"
-              >
-                <Trash2 size={14} />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    title="Delete brief"
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete this brief</p>
+                </TooltipContent>
+              </Tooltip>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>

@@ -16,12 +16,6 @@ export function MediaSettings({ style, onChange }: MediaSettingsProps) {
         value={style.logo}
         onChange={(value) => onChange({ logo: value })}
       />
-      
-      <MediaUploader 
-        type="background"
-        value={style.backgroundImage}
-        onChange={(value) => onChange({ backgroundImage: value })}
-      />
     </div>
   );
 }

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -14,8 +13,26 @@ interface ResponseDetailsProps {
 }
 
 export const ResponseDetails = ({ response }: ResponseDetailsProps) => {
-  // Check if answers exists and is an array before mapping
-  const hasValidAnswers = response.answers && Array.isArray(response.answers);
+  // Normalize the answers data to ensure it's always an array
+  const normalizedAnswers = React.useMemo(() => {
+    if (!response.answers) return [];
+    
+    // If it's already an array, use it
+    if (Array.isArray(response.answers)) return response.answers;
+    
+    // Otherwise, try to convert from object format
+    if (typeof response.answers === 'object') {
+      // Filter out special keys like _clientInfo
+      return Object.entries(response.answers)
+        .filter(([key]) => !key.startsWith('_'))
+        .map(([key, value]) => ({
+          question: `Question ${key}`,
+          answer: value as string
+        }));
+    }
+    
+    return [];
+  }, [response.answers]);
 
   return (
     <CardContent>
@@ -28,8 +45,8 @@ export const ResponseDetails = ({ response }: ResponseDetailsProps) => {
       )}
       
       <div className="space-y-6">
-        {hasValidAnswers ? (
-          response.answers.map((answer, idx) => (
+        {normalizedAnswers.length > 0 ? (
+          normalizedAnswers.map((answer, idx) => (
             <div key={idx} className="border-b pb-4 last:border-0">
               <div className="font-medium mb-1">{answer.question}</div>
               <div className="text-muted-foreground whitespace-pre-wrap">{answer.answer}</div>

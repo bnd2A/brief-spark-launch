@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from 'react-router-dom';
 import { Question } from '@/types/question';
-import { Share2, Eye } from "lucide-react";
+import { Eye } from "lucide-react";
 import { QuestionPreview } from './QuestionPreview';
 import { BriefStyle } from '@/hooks/useBriefForm';
 
@@ -57,17 +57,6 @@ export function BriefPreview({
               >
                 {description}
               </p>
-            )}
-            
-            {style.backgroundImage && (
-              <div 
-                className="absolute inset-0 z-0 opacity-10" 
-                style={{ 
-                  backgroundImage: `url(${style.backgroundImage})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center'
-                }} 
-              />
             )}
             
             <div className="flex-grow overflow-auto pr-1 relative z-10">

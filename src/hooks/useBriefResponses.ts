@@ -7,10 +7,7 @@ interface Response {
   id: string;
   brief_id: string;
   respondent_email: string | null;
-  answers: {
-    question: string;
-    answer: string;
-  }[];
+  answers: any;
   submitted_at: string;
 }
 
@@ -65,45 +62,10 @@ export const useBriefResponses = (briefId: string | undefined) => {
         return [];
       }
       
-      // Ensure answers is always an array
-      const processedData = data?.map(response => {
-        // Log the raw answers for debugging
-        console.log('Raw response answers:', response.answers);
-        
-        // Check if answers is already an array
-        if (Array.isArray(response.answers)) {
-          return response;
-        }
-        
-        // If answers is an object (might be a JSON string that was parsed), try to convert it to an array
-        try {
-          // If answers is a string, try to parse it
-          if (typeof response.answers === 'string') {
-            response.answers = JSON.parse(response.answers);
-          }
-          
-          // If it's an object with numeric keys, convert to array
-          if (typeof response.answers === 'object' && response.answers !== null) {
-            const answersArray = Object.values(response.answers);
-            if (answersArray.length > 0) {
-              response.answers = answersArray;
-              return response;
-            }
-          }
-          
-          // Default case: not a valid answers format
-          response.answers = [];
-          return response;
-        } catch (e) {
-          console.error('Error processing response answers:', e);
-          response.answers = [];
-          return response;
-        }
-      });
-      
-      return processedData as Response[];
+      return data as Response[];
     },
-    enabled: !!briefId
+    enabled: !!briefId,
+    refetchInterval: 30000 // Refetch every 30 seconds to catch new responses
   });
 
   return {
