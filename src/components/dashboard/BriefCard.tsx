@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Share2, Trash2, Copy, MessageSquare, FileText, FileMarkdown, MoreHorizontal } from "lucide-react";
+import { Share2, Trash2, Copy, MessageSquare, FileText, FileDown, MoreHorizontal } from "lucide-react";
 import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -113,7 +113,7 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
                     <FileText size={16} className="mr-2" /> Export as PDF
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => exportBrief('markdown')}>
-                    <FileMarkdown size={16} className="mr-2" /> Export as Markdown
+                    <FileDown size={16} className="mr-2" /> Export as Markdown
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDelete}>
@@ -186,7 +186,7 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
           <FileText size={16} className="mr-2" /> Export as PDF
         </ContextMenuItem>
         <ContextMenuItem onClick={() => exportBrief('markdown')}>
-          <FileMarkdown size={16} className="mr-2" /> Export as Markdown
+          <FileDown size={16} className="mr-2" /> Export as Markdown
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
