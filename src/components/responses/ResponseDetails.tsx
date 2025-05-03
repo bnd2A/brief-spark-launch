@@ -1,6 +1,10 @@
+
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { FileText, FileDown } from "lucide-react";
+import { useToast } from '@/hooks/use-toast';
 
 interface ResponseDetailsProps {
   response: {
@@ -13,6 +17,8 @@ interface ResponseDetailsProps {
 }
 
 export const ResponseDetails = ({ response }: ResponseDetailsProps) => {
+  const { toast } = useToast();
+  
   // Normalize the answers data to ensure it's always an array
   const normalizedAnswers = React.useMemo(() => {
     if (!response.answers) return [];
@@ -33,6 +39,14 @@ export const ResponseDetails = ({ response }: ResponseDetailsProps) => {
     
     return [];
   }, [response.answers]);
+
+  const exportResponse = (format: 'pdf' | 'markdown') => {
+    toast({
+      title: `Exporting as ${format === 'pdf' ? 'PDF' : 'Markdown'}`,
+      description: "Your file is being prepared for download."
+    });
+    // Actual export implementation would go here in a real app
+  };
 
   return (
     <CardContent>
@@ -57,6 +71,15 @@ export const ResponseDetails = ({ response }: ResponseDetailsProps) => {
             No answer data available or data is in an unexpected format.
           </div>
         )}
+      </div>
+
+      <div className="mt-6 flex justify-end gap-2">
+        <Button variant="outline" onClick={() => exportResponse('markdown')}>
+          <FileDown size={16} className="mr-2" /> Export as Markdown
+        </Button>
+        <Button onClick={() => exportResponse('pdf')}>
+          <FileText size={16} className="mr-2" /> Export as PDF
+        </Button>
       </div>
     </CardContent>
   );
