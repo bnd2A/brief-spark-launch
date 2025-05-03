@@ -73,17 +73,16 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
           <span>Created: {formatDate(brief.created_at)}</span>
           <div className="mt-1 flex items-center">
             <MessageSquare size={14} className="mr-1" />
-            <span className="font-medium">{brief.responses_count}</span> {brief.responses_count === 1 ? 'response' : 'responses'}
+            <span>{brief.responses_count}</span> {brief.responses_count === 1 ? 'response' : 'responses'}
           </div>
           {brief.sharedBy && (
-            <div className="mt-2 flex items-center text-xs">
-              <Share2 size={14} className="mr-1" />
+            <div className="mt-2 text-xs">
               <span>Shared by {brief.sharedBy}</span>
             </div>
           )}
         </div>
       </CardContent>
-      <CardFooter className="flex flex-wrap justify-between gap-2 border-t pt-4 pb-3">
+      <CardFooter className="border-t pt-4 pb-3 flex justify-between">
         <div className="flex gap-2">
           <Button 
             variant="outline" 
@@ -97,23 +96,10 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
             variant="outline" 
             size="sm"
             onClick={copyLinkToClipboard}
-            className="flex items-center gap-1"
+            title="Copy share link"
           >
             <Copy size={14} />
-            Copy Link
           </Button>
-          
-          {brief.responses_count > 0 && (
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigate(`/app/responses/${brief.id}`)}
-              className="flex items-center gap-1"
-            >
-              <MessageSquare size={14} />
-              View Responses
-            </Button>
-          )}
           
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -121,8 +107,9 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
                 variant="outline" 
                 size="sm"
                 className="text-destructive hover:text-destructive"
+                title="Delete brief"
               >
-                <Trash2 size={16} />
+                <Trash2 size={14} />
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -146,25 +133,23 @@ const BriefCard: React.FC<BriefCardProps> = ({ brief }) => {
           </AlertDialog>
         </div>
         
-        <div className="flex gap-2">
-          {brief.responses_count > 0 ? (
-            <Button 
-              variant="secondary" 
-              size="sm" 
-              onClick={() => navigate(`/app/responses/${brief.id}`)}
-            >
-              View Responses
-            </Button>
-          ) : (
-            <Button 
-              variant="secondary" 
-              size="sm" 
-              onClick={() => navigate(`/share/${brief.id}`)} 
-            >
-              View & Share
-            </Button>
-          )}
-        </div>
+        {brief.responses_count > 0 ? (
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            onClick={() => navigate(`/app/responses/${brief.id}`)}
+          >
+            View Responses
+          </Button>
+        ) : (
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            onClick={() => navigate(`/share/${brief.id}`)} 
+          >
+            Share
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
