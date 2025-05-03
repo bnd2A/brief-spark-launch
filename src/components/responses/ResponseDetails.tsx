@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { FileText, FileDown } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
+import { useLoadBrief } from '@/hooks/useLoadBrief';
 
 interface ResponseDetailsProps {
   response: {
@@ -13,32 +14,50 @@ interface ResponseDetailsProps {
       answer: string;
     }[] | any; // Allow for potential non-array type
     respondent_email?: string | null;
+    brief_id: string;
   };
 }
 
 export const ResponseDetails = ({ response }: ResponseDetailsProps) => {
   const { toast } = useToast();
-  
-  // Normalize the answers data to ensure it's always an array
+  const { brief } = useLoadBrief(response.brief_id);
+
+  // Normalize the answers data to ensure it's always an array and map to questions
   const normalizedAnswers = React.useMemo(() => {
-    if (!response.answers) return [];
+    if (!response.answers || !brief) return [];
     
-    // If it's already an array, use it
-    if (Array.isArray(response.answers)) return response.answers;
+    // Get the questions from the brief
+    const briefQuestions = brief.questions || [];
     
-    // Otherwise, try to convert from object format
+    // If it's already an array, try to match with brief questions
+    if (Array.isArray(response.answers)) {
+      return response.answers.map((answer, index) => {
+        // Try to find the corresponding question from the brief
+        const matchingQuestion = briefQuestions[index];
+        return {
+          question: matchingQuestion?.question || answer.question || `Question ${index + 1}`,
+          answer: answer.answer
+        };
+      });
+    }
+    
+    // If it's an object format, try to match keys with brief questions
     if (typeof response.answers === 'object') {
       // Filter out special keys like _clientInfo
       return Object.entries(response.answers)
         .filter(([key]) => !key.startsWith('_'))
-        .map(([key, value]) => ({
-          question: `Question ${key}`,
-          answer: value as string
-        }));
+        .map(([key, value], index) => {
+          // Try to find matching question in brief by index or key
+          const matchingQuestion = briefQuestions.find(q => q.id === key) || briefQuestions[index];
+          return {
+            question: matchingQuestion?.question || `Question ${key}`,
+            answer: value as string
+          };
+        });
     }
     
     return [];
-  }, [response.answers]);
+  }, [response.answers, brief]);
 
   const exportResponse = (format: 'pdf' | 'markdown') => {
     toast({
