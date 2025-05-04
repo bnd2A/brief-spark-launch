@@ -3,6 +3,7 @@ import React, { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, FileText, Settings, LogOut } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -14,6 +15,11 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   
   const isActive = (path: string) => {
     return location.pathname.startsWith(path);
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
   };
 
   return (
@@ -29,7 +35,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             </div>
             
             <div className="flex items-center">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
                 <LogOut size={18} className="mr-2" /> Sign out
               </Button>
             </div>

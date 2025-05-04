@@ -1,0 +1,53 @@
+
+import React, { useState } from 'react';
+import AppLayout from '@/components/AppLayout';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AccountSettings from '@/components/settings/AccountSettings';
+import SubscriptionSettings from '@/components/settings/SubscriptionSettings';
+import BrandingSettings from '@/components/settings/BrandingSettings';
+import PaymentSettings from '@/components/settings/PaymentSettings';
+import { Card } from '@/components/ui/card';
+
+const Settings = () => {
+  const [activeTab, setActiveTab] = useState("account");
+
+  return (
+    <AppLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Settings</h1>
+          <p className="text-muted-foreground">Manage your account and preferences</p>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="bg-background">
+            <TabsTrigger value="account">Account</TabsTrigger>
+            <TabsTrigger value="subscription">Subscription</TabsTrigger>
+            <TabsTrigger value="payment">Payment</TabsTrigger>
+            <TabsTrigger value="branding">Branding</TabsTrigger>
+          </TabsList>
+          
+          <Card className="p-6">
+            <TabsContent value="account" className="space-y-4">
+              <AccountSettings />
+            </TabsContent>
+            
+            <TabsContent value="subscription" className="space-y-4">
+              <SubscriptionSettings />
+            </TabsContent>
+            
+            <TabsContent value="payment" className="space-y-4">
+              <PaymentSettings />
+            </TabsContent>
+            
+            <TabsContent value="branding" className="space-y-4">
+              <BrandingSettings />
+            </TabsContent>
+          </Card>
+        </Tabs>
+      </div>
+    </AppLayout>
+  );
+};
+
+export default Settings;

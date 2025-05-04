@@ -16,6 +16,7 @@ import BriefView from "@/pages/BriefView";
 import NotFound from "@/pages/NotFound";
 import Responses from "@/pages/Responses";
 import Auth from "@/pages/Auth";
+import Settings from "@/pages/Settings";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,6 +50,11 @@ const App = () => (
             <Route path="/app/edit/:id" element={
               <ProtectedRoute>
                 <EditBrief />
+              </ProtectedRoute>
+            } />
+            <Route path="/app/settings" element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             } />
             <Route path="/share/:id" element={<BriefView />} />
