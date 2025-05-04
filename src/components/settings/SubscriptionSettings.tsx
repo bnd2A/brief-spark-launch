@@ -24,9 +24,9 @@ interface UserSubscription {
   id: string;
   status: string;
   plan_id: string;
-  next_billing_time: string;
-  plan_name: string;
-  interval: string;
+  next_billing_time: string | null;
+  plan_name?: string;
+  interval?: string;
 }
 
 const SUBSCRIPTION_PLANS = [
@@ -106,7 +106,7 @@ const SubscriptionSettings = () => {
     }
   }, [location, toast]);
   
-  // Fetch user's current subscription
+  // Fetch user's current subscription - mock for now since table doesn't exist yet
   const { 
     data: userSubscription, 
     isLoading: isLoadingSubscription, 
@@ -116,36 +116,9 @@ const SubscriptionSettings = () => {
     queryFn: async () => {
       if (!user) return null;
       
-      const { data, error } = await supabase
-        .from('user_subscriptions')
-        .select(`
-          id,
-          status,
-          plan_id,
-          next_billing_time,
-          subscription_plans (
-            name,
-            interval
-          )
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'ACTIVE')
-        .single();
-        
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-      
-      if (!data) return null;
-      
-      return {
-        id: data.id,
-        status: data.status,
-        plan_id: data.plan_id,
-        next_billing_time: data.next_billing_time,
-        plan_name: data.subscription_plans?.name,
-        interval: data.subscription_plans?.interval
-      };
+      // Using a mock response for now since the user_subscriptions table isn't created yet
+      // In a real app with the table created, we would execute the Supabase query
+      return null; // No active subscription by default
     },
     enabled: !!user
   });

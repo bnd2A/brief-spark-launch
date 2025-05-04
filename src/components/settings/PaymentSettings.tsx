@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CreditCard, PaypalIcon, Plus, Edit2, Loader2 } from 'lucide-react';
+import { CreditCard, Plus, Edit2, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,8 +12,8 @@ import { Switch } from '@/components/ui/switch';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-// PayPal icon component
-const PaypalIcon = () => (
+// Custom PayPal icon component (renamed to avoid conflict)
+const CustomPaypalIcon = () => (
   <svg 
     width="20" 
     height="20" 
@@ -253,7 +252,7 @@ const PaymentSettings = () => {
                   ) : (
                     <div className="bg-muted/40 p-4 rounded-lg text-center">
                       <div className="flex justify-center mb-3">
-                        <PaypalIcon />
+                        <CustomPaypalIcon />
                       </div>
                       <p className="text-sm mb-4">Connect with PayPal to securely pay using your PayPal account, debit or credit cards.</p>
                       <Button 
@@ -269,7 +268,7 @@ const PaymentSettings = () => {
                           </>
                         ) : (
                           <>
-                            <PaypalIcon />
+                            <CustomPaypalIcon />
                             <span className="ml-2">Connect with PayPal</span>
                           </>
                         )}
@@ -302,7 +301,7 @@ const PaymentSettings = () => {
                     {method.type === 'card' ? (
                       <CreditCard className="h-5 w-5 mr-2 text-primary" />
                     ) : (
-                      <PaypalIcon />
+                      <CustomPaypalIcon />
                     )}
                     <div>
                       <p className="font-medium">
