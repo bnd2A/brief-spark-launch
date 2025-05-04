@@ -159,6 +159,7 @@ async function createSubscription(token, planId, userId) {
     },
     body: JSON.stringify({
       plan_id: planId,
+      custom_id: userId,
       application_context: {
         brand_name: "Briefly",
         locale: "en-US",
@@ -192,7 +193,7 @@ async function handleWebhook(request) {
   
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   
-  // Extract custom_id to get user ID
+  // Extract subscription ID
   const subscriptionId = resource.id;
   
   try {
@@ -210,13 +211,11 @@ async function handleWebhook(request) {
     }
     
     const subscription = await subRes.json();
-    const customId = subscription.custom_id;
+    const userId = subscription.custom_id;
     
-    if (!customId) {
+    if (!userId) {
       throw new Error("Missing custom_id in subscription");
     }
-    
-    const userId = customId;
     
     // Update user subscription status based on event type
     switch(eventType) {
