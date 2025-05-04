@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import AppLayout from '@/components/AppLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AccountSettings from '@/components/settings/AccountSettings';
@@ -9,7 +10,16 @@ import PaymentSettings from '@/components/settings/PaymentSettings';
 import { Card } from '@/components/ui/card';
 
 const Settings = () => {
-  const [activeTab, setActiveTab] = useState("account");
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  
+  // Determine the active tab based on query parameters or default to "account"
+  let initialTab = "account";
+  if (queryParams.get('success') || queryParams.get('canceled')) {
+    initialTab = "subscription";
+  }
+  
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   return (
     <AppLayout>

@@ -7,44 +7,71 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Check } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 
-// Mock subscription data - in a real app, this would come from your backend
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  interval: string;
+  features: string[];
+}
+
+interface UserSubscription {
+  id: string;
+  status: string;
+  plan_id: string;
+  next_billing_time: string;
+  plan_name: string;
+  interval: string;
+}
+
 const SUBSCRIPTION_PLANS = [
   {
     id: 'free',
     name: 'Free',
-    description: 'Basic features for personal use',
+    description: 'Try Briefly',
     price: 0,
+    interval: 'FOREVER',
     features: [
-      'Create up to 3 briefs',
-      'Basic customization options',
-      'Unlimited responses'
+      '1 active brief',
+      '7-day Pro trial',
+      '"Made with Briefly" branding',
     ]
   },
   {
-    id: 'pro',
-    name: 'Professional',
+    id: 'pro_monthly',
+    name: 'Freelance Pro',
     description: 'Everything you need for professional work',
-    price: 19,
+    price: 9,
+    interval: 'MONTH',
     features: [
-      'Create unlimited briefs',
-      'Advanced customization',
-      'Remove branding',
-      'Priority support'
+      'Unlimited briefs',
+      'PDF & Markdown export',
+      'White-labeling (remove branding)',
+      'Custom background & logo',
+      'Email notifications',
+      'Priority support',
+      '3 ready-to-use templates'
     ]
   },
   {
-    id: 'business',
-    name: 'Business',
-    description: 'Enterprise-grade features for teams',
-    price: 49,
+    id: 'pro_yearly',
+    name: 'Freelance Pro (Yearly)',
+    description: 'Save 22% with annual billing',
+    price: 84,
+    interval: 'YEAR',
     features: [
-      'Everything in Professional',
-      'Team collaboration',
-      'Custom domain',
-      'API access',
-      'Dedicated support'
+      'Unlimited briefs',
+      'PDF & Markdown export',
+      'White-labeling (remove branding)',
+      'Custom background & logo',
+      'Email notifications',
+      'Priority support',
+      '3 ready-to-use templates'
     ]
   }
 ];
@@ -52,55 +79,172 @@ const SUBSCRIPTION_PLANS = [
 const SubscriptionSettings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [currentPlan, setCurrentPlan] = useState<string>('free');
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   
-  // Simulate loading the user's current plan
+  // Check for success or canceled URL parameters (for PayPal return)
   useEffect(() => {
-    const fetchUserPlan = async () => {
-      if (!user) return;
-      
-      try {
-        // In a real app, you would fetch this from your database
-        // For now, we'll just simulate a delay
-        setIsLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Simulate getting the current plan - replace with actual DB query
-        setCurrentPlan('free'); // Default to free plan
-      } catch (error) {
-        console.error('Error fetching subscription:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    const searchParams = new URLSearchParams(location.search);
+    const success = searchParams.get('success');
+    const canceled = searchParams.get('canceled');
     
-    fetchUserPlan();
-  }, [user]);
+    if (success) {
+      toast({
+        title: "Subscription successful",
+        description: "Your subscription has been activated. Thank you!",
+      });
+      // Remove the query parameters
+      window.history.replaceState({}, document.title, location.pathname);
+    } else if (canceled) {
+      toast({
+        title: "Subscription canceled",
+        description: "You've canceled the subscription process.",
+        variant: "destructive",
+      });
+      // Remove the query parameters
+      window.history.replaceState({}, document.title, location.pathname);
+    }
+  }, [location, toast]);
+  
+  // Fetch user's current subscription
+  const { 
+    data: userSubscription, 
+    isLoading: isLoadingSubscription, 
+    refetch: refetchSubscription 
+  } = useQuery({
+    queryKey: ['userSubscription', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from('user_subscriptions')
+        .select(`
+          id,
+          status,
+          plan_id,
+          next_billing_time,
+          subscription_plans (
+            name,
+            interval
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'ACTIVE')
+        .single();
+        
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+      
+      if (!data) return null;
+      
+      return {
+        id: data.id,
+        status: data.status,
+        plan_id: data.plan_id,
+        next_billing_time: data.next_billing_time,
+        plan_name: data.subscription_plans?.name,
+        interval: data.subscription_plans?.interval
+      };
+    },
+    enabled: !!user
+  });
+  
+  const currentPlanId = userSubscription ? 
+    (userSubscription.interval === 'MONTH' ? 'pro_monthly' : 
+     userSubscription.interval === 'YEAR' ? 'pro_yearly' : 'free') : 
+    'free';
   
   const handleUpgrade = async (planId: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to subscribe to a plan.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
-      // This would be replaced with actual Stripe checkout or similar
-      toast({
-        title: "Coming soon",
-        description: `Upgrading to ${planId} plan will be available soon!`,
+      const response = await fetch('/api/paypal-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          action: 'create_subscription',
+          planType: planId
+        })
       });
       
-      // Simulate success for demo purposes
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const result = await response.json();
       
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create subscription');
+      }
+      
+      // Redirect to PayPal approval URL
+      window.location.href = result.approve_url;
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to upgrade subscription",
+        title: "Subscription Error",
+        description: error.message || "Failed to process subscription",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
+  
+  const handleCancelSubscription = async () => {
+    setIsLoading(true);
+    
+    try {
+      // In a real app, this would connect to the PayPal API to cancel the subscription
+      toast({
+        title: "Coming soon",
+        description: "Subscription cancellation will be fully implemented soon.",
+      });
+      
+      // For demo purposes, show a success message
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast({
+        title: "Subscription Canceled",
+        description: "Your subscription will remain active until the end of the billing period."
+      });
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to cancel subscription",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Show loading state
+  if (isLoadingSubscription) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-medium">Subscription Plans</h3>
+          <p className="text-sm text-muted-foreground">
+            Choose the plan that works best for you
+          </p>
+        </div>
+        <Separator />
+        <div className="flex justify-center items-center p-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -112,68 +256,125 @@ const SubscriptionSettings = () => {
       </div>
       <Separator />
       
-      {isLoading ? (
-        <div className="flex justify-center p-8">
-          <p>Loading subscription details...</p>
-        </div>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-3">
-          {SUBSCRIPTION_PLANS.map((plan) => (
-            <Card key={plan.id} className={`${currentPlan === plan.id ? 'border-primary' : ''}`}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle>{plan.name}</CardTitle>
-                    <CardDescription>{plan.description}</CardDescription>
-                  </div>
-                  {currentPlan === plan.id && (
-                    <Badge className="bg-primary">Current Plan</Badge>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-4">
-                  <span className="text-3xl font-bold">${plan.price}</span>
-                  <span className="text-muted-foreground">/month</span>
-                </div>
-                <ul className="space-y-2">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-center">
-                      <Check className="h-4 w-4 mr-2 text-primary" />
-                      <span className="text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-              <CardFooter>
-                {currentPlan === plan.id ? (
-                  <Button disabled className="w-full" variant="outline">
-                    Current Plan
-                  </Button>
-                ) : (
-                  <Button 
-                    className="w-full" 
-                    onClick={() => handleUpgrade(plan.id)}
-                    disabled={isLoading}
-                  >
-                    {plan.price > 0 ? 'Upgrade' : 'Downgrade'}
-                  </Button>
+      {userSubscription && (
+        <Card className="bg-primary/5 border-primary/20 mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg">Current Subscription</CardTitle>
+            <CardDescription>
+              You are currently on the {userSubscription.plan_name || 'Pro'} plan
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Status: <span className="font-medium text-foreground">Active</span>
+                </p>
+                {userSubscription.next_billing_time && (
+                  <p className="text-sm text-muted-foreground">
+                    Next billing date: <span className="font-medium text-foreground">
+                      {new Date(userSubscription.next_billing_time).toLocaleDateString()}
+                    </span>
+                  </p>
                 )}
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+              </div>
+              <Badge variant="outline" className="bg-primary/10">
+                {userSubscription.interval === 'MONTH' ? 'Monthly' : 
+                 userSubscription.interval === 'YEAR' ? 'Annual' : 'Free'}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
       )}
       
-      {currentPlan !== 'free' && (
+      <div className="grid gap-6 md:grid-cols-3">
+        {SUBSCRIPTION_PLANS.map((plan) => (
+          <Card key={plan.id} className={`${currentPlanId === plan.id ? 'border-primary' : ''}`}>
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle>{plan.name}</CardTitle>
+                  <CardDescription>{plan.description}</CardDescription>
+                </div>
+                {currentPlanId === plan.id && (
+                  <Badge className="bg-primary">Current Plan</Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
+                {plan.id === 'free' ? (
+                  <span className="text-3xl font-bold">Free</span>
+                ) : (
+                  <>
+                    <span className="text-3xl font-bold">${plan.price}</span>
+                    <span className="text-muted-foreground">/{plan.interval.toLowerCase() === 'month' ? 'month' : 'year'}</span>
+                  </>
+                )}
+              </div>
+              <ul className="space-y-2">
+                {plan.features.map((feature, index) => (
+                  <li key={index} className="flex items-center">
+                    <Check className="h-4 w-4 mr-2 text-primary" />
+                    <span className="text-sm">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+            <CardFooter>
+              {currentPlanId === plan.id ? (
+                <Button disabled className="w-full" variant="outline">
+                  Current Plan
+                </Button>
+              ) : (
+                <Button 
+                  className="w-full" 
+                  onClick={() => handleUpgrade(plan.id)}
+                  disabled={isLoading || plan.id === 'free'}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : plan.price > 0 ? 'Upgrade' : 'Downgrade'}
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+      
+      <div className="mt-8">
+        <h4 className="text-md font-medium mb-4">Future Plans</h4>
+        <Card className="bg-muted/40">
+          <CardHeader>
+            <CardTitle>Coming Soon - "Agency Pack"</CardTitle>
+            <CardDescription>Advanced features for agencies and teams</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">Agency features including multi-user support, client portal, CRM sync, and more.</p>
+            <div className="mt-4">
+              <Button variant="outline" disabled>Get Notified</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {currentPlanId !== 'free' && (
         <div className="mt-8">
           <Button 
             variant="outline" 
             className="text-destructive hover:text-destructive"
-            onClick={() => handleUpgrade('free')}
+            onClick={handleCancelSubscription}
             disabled={isLoading}
           >
-            Cancel Subscription
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : "Cancel Subscription"}
           </Button>
           <p className="text-xs text-muted-foreground mt-2">
             Your subscription will continue until the end of the current billing period
