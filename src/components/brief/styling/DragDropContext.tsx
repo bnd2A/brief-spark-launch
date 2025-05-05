@@ -81,12 +81,15 @@ export function DragDropContext({ position, onChange }: DragDropContextProps) {
     left: `${currentPosition.x}%`,
     top: `${currentPosition.y}%`,
     transform: 'translate(-50%, -50%)',
+    position: 'absolute',
+    zIndex: 10,
+    touchAction: 'none'
   };
 
   return (
     <div 
       ref={containerRef}
-      className="relative h-40 bg-white border rounded-md"
+      className="relative h-40 bg-white border rounded-md overflow-hidden"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
@@ -101,14 +104,15 @@ export function DragDropContext({ position, onChange }: DragDropContextProps) {
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
       >
-        <div className="flex items-center gap-1 text-xs bg-white rounded p-1 shadow-sm">
+        <div className="flex items-center gap-1 text-xs bg-white rounded p-1 shadow-sm border">
           <Move size={16} /> 
           <span>Logo</span>
         </div>
       </div>
       
-      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-        Brief preview area
+      <div className="absolute inset-0 flex items-center justify-center flex-col text-muted-foreground">
+        <div className="w-full h-3/4 border-b border-dashed border-gray-300"></div>
+        <div className="text-xs mt-2">Click and drag to position logo</div>
       </div>
     </div>
   );
