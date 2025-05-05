@@ -15,22 +15,64 @@ export const BriefHeader: React.FC<BriefHeaderProps> = ({ title, description, st
     branded: 'p-6 md:p-8 bg-accent text-accent-foreground'
   };
 
+  // Get logo size with a default of 100%
+  const logoSize = style.logoSize || 100;
+
+  // Calculate logo position styles
+  const getLogoStyles = () => {
+    if (!style.logo) return {};
+    
+    // Default position if not specified
+    const position = style.logoPosition || { x: 50, y: 20 };
+    
+    return {
+      position: 'relative',
+      display: 'flex',
+      justifyContent: 'center',
+      marginBottom: '1rem',
+    };
+  };
+
+  const getLogoImageStyles = () => {
+    if (!style.logo) return {};
+    
+    // Default position if not specified
+    const position = style.logoPosition || { x: 50, y: 20 };
+    
+    return {
+      maxHeight: `${logoSize}px`,
+      objectFit: 'contain',
+      position: style.headerStyle === 'branded' ? 'relative' : 'absolute',
+      left: style.headerStyle === 'branded' ? 'auto' : `${position.x}%`,
+      top: style.headerStyle === 'branded' ? 'auto' : `${position.y}%`,
+      transform: style.headerStyle === 'branded' ? 'none' : 'translate(-50%, -50%)',
+    } as React.CSSProperties;
+  };
+
   return (
     <div 
       className={headerClasses[style.headerStyle || 'default']} 
       style={{
         backgroundColor: style.headerStyle !== 'minimal' ? style.primaryColor : 'transparent',
-        color: style.headerStyle !== 'minimal' ? '#ffffff' : 'inherit'
+        color: style.headerStyle !== 'minimal' ? '#ffffff' : 'inherit',
+        position: 'relative',
       }}
     >
-      {style.headerStyle === 'branded' && style.logo && (
-        <div className="flex justify-center mb-4">
+      {style.headerStyle === 'branded' && style.logo ? (
+        <div className="flex justify-center mb-4" style={getLogoStyles()}>
           <img 
             src={style.logo} 
             alt="Brand logo" 
-            className="max-h-16 object-contain" 
+            style={getLogoImageStyles()}
           />
         </div>
+      ) : style.logo && (
+        <img 
+          src={style.logo} 
+          alt="Brand logo" 
+          className="absolute z-10"
+          style={getLogoImageStyles()}
+        />
       )}
       
       <h1 className={`font-bold ${style.headerStyle === 'minimal' ? 'text-xl' : 'text-2xl'} mb-2`}>

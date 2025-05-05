@@ -9,6 +9,8 @@ import { useToast } from './use-toast';
 
 export interface BriefStyle {
   logo?: string;
+  logoSize?: number;
+  logoPosition?: { x: number; y: number };
   primaryColor?: string;
   secondaryColor?: string;
   fontFamily?: string;
@@ -43,7 +45,9 @@ export function useBriefForm(briefId?: string) {
     primaryColor: '#9b87f5',
     secondaryColor: '#f1f0fb',
     fontFamily: 'Inter, sans-serif',
-    headerStyle: 'default'
+    headerStyle: 'default',
+    logoSize: 100,
+    logoPosition: { x: 50, y: 20 }
   });
 
   const addQuestion = (type: Question['type']) => {
@@ -124,7 +128,11 @@ export function useBriefForm(briefId?: string) {
     setDescription(brief.description);
     setQuestions(brief.questions);
     if (brief.style) {
-      setStyle(brief.style);
+      setStyle({
+        ...brief.style,
+        logoSize: brief.style.logoSize || 100,
+        logoPosition: brief.style.logoPosition || { x: 50, y: 20 }
+      });
     }
   }, []);
 

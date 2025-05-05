@@ -47,7 +47,26 @@ const BriefView = () => {
     fontFamily: style.fontFamily || 'Inter, sans-serif',
     '--accent-color': style.primaryColor || '#9b87f5',
     '--bg-color': style.secondaryColor || '#f1f0fb',
+    position: 'relative',
   } as React.CSSProperties;
+
+  // Calculate logo position styles for non-branded header
+  const getLogoStyles = () => {
+    if (!style.logo || style.headerStyle === 'branded') return {};
+    
+    // Get position with default if not set
+    const position = style.logoPosition || { x: 50, y: 20 };
+    const logoSize = style.logoSize || 100;
+    
+    return {
+      position: 'absolute',
+      left: `${position.x}%`,
+      top: `${position.y}%`,
+      transform: 'translate(-50%, -50%)',
+      maxHeight: `${logoSize}px`,
+      zIndex: 10,
+    } as React.CSSProperties;
+  };
 
   return (
     <div className="min-h-screen bg-muted/30" style={customStyles}>
@@ -81,6 +100,15 @@ const BriefView = () => {
         </div>
         
         <Card className="overflow-hidden">
+          {style.logo && style.headerStyle !== 'branded' && (
+            <img 
+              src={style.logo} 
+              alt="Brand logo" 
+              style={getLogoStyles()}
+              className="absolute z-10"
+            />
+          )}
+          
           <BriefHeader 
             title={brief.title}
             description={brief.description}
@@ -96,6 +124,6 @@ const BriefView = () => {
       </div>
     </div>
   );
-};
+}
 
 export default BriefView;

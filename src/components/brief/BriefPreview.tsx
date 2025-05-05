@@ -31,16 +31,44 @@ export function BriefPreview({
     '--secondary-color': style.secondaryColor || '#f1f0fb',
   } as React.CSSProperties;
 
+  // Get logo size with a default of 100%
+  const logoSize = style.logoSize || 100;
+
+  // Calculate logo position styles
+  const getLogoStyles = () => {
+    if (!style.logo) return {};
+    
+    // Default position if not specified
+    const position = style.logoPosition || { x: 50, y: 20 };
+    
+    return {
+      position: 'absolute',
+      left: `${position.x}%`,
+      top: `${position.y}%`,
+      transform: 'translate(-50%, -50%)',
+      maxHeight: `${logoSize / 3}px`, // Scale down for preview
+      zIndex: 10,
+    } as React.CSSProperties;
+  };
+
   return (
     <Card className="p-6 sticky top-6">
       <h2 className="text-xl font-medium mb-4">Live preview</h2>
       <div className="aspect-[9/16] bg-muted/30 rounded-lg mb-6 flex items-center justify-center overflow-hidden">
         {title ? (
-          <div className="w-full h-full p-4 flex flex-col" style={previewStyles}>
+          <div className="w-full h-full p-4 flex flex-col relative" style={previewStyles}>
             {style.headerStyle === 'branded' && style.logo && (
               <div className="flex justify-center mb-3">
                 <img src={style.logo} alt="Brand logo" className="h-10 object-contain" />
               </div>
+            )}
+            
+            {style.logo && style.headerStyle !== 'branded' && (
+              <img 
+                src={style.logo} 
+                alt="Brand logo" 
+                style={getLogoStyles()}
+              />
             )}
             
             <div 
