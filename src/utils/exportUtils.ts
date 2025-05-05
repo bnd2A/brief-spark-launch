@@ -4,10 +4,8 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 
 // Extended type for jsPDF with autoTable plugin
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
+interface jsPDFWithAutoTable extends jsPDF {
+  autoTable: (options: any) => jsPDF;
 }
 
 type Answer = {
@@ -72,7 +70,7 @@ export const exportAsPDF = (
   answers: Answer[]
 ): void => {
   // Initialize PDF document
-  const doc = new jsPDF();
+  const doc = new jsPDF() as jsPDFWithAutoTable;
   
   // Set up fonts and sizes
   doc.setFont('helvetica', 'bold');
