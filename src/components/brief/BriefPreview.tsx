@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,20 +34,20 @@ export function BriefPreview({
   const logoSize = style.logoSize || 100;
 
   // Calculate logo position styles
-  const getLogoStyles = () => {
+  const getLogoStyles = (): React.CSSProperties => {
     if (!style.logo) return {};
     
     // Default position if not specified
     const position = style.logoPosition || { x: 50, y: 20 };
     
     return {
-      position: 'absolute',
+      position: 'absolute' as const,
       left: `${position.x}%`,
       top: `${position.y}%`,
       transform: 'translate(-50%, -50%)',
       maxHeight: `${logoSize / 3}px`, // Scale down for preview
       zIndex: 10,
-    } as React.CSSProperties;
+    };
   };
 
   return (

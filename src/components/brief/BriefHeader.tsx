@@ -22,11 +22,8 @@ export const BriefHeader: React.FC<BriefHeaderProps> = ({ title, description, st
   const getLogoStyles = (): React.CSSProperties => {
     if (!style.logo) return {};
     
-    // Default position if not specified
-    const position = style.logoPosition || { x: 50, y: 20 };
-    
     return {
-      position: 'relative' as 'relative',
+      position: 'relative' as const,
       display: 'flex',
       justifyContent: 'center',
       marginBottom: '1rem',
@@ -41,8 +38,8 @@ export const BriefHeader: React.FC<BriefHeaderProps> = ({ title, description, st
     
     return {
       maxHeight: `${logoSize}px`,
-      objectFit: 'contain' as 'contain',
-      position: style.headerStyle === 'branded' ? 'relative' as 'relative' : 'absolute' as 'absolute',
+      objectFit: 'contain' as const,
+      position: style.headerStyle === 'branded' ? 'relative' as const : 'absolute' as const,
       left: style.headerStyle === 'branded' ? 'auto' : `${position.x}%`,
       top: style.headerStyle === 'branded' ? 'auto' : `${position.y}%`,
       transform: style.headerStyle === 'branded' ? 'none' : 'translate(-50%, -50%)',

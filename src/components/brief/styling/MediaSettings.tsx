@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BriefStyle } from '@/hooks/useBriefForm';
 import { MediaUploader } from './MediaUploader';
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,13 @@ interface MediaSettingsProps {
 }
 
 export function MediaSettings({ style, onChange }: MediaSettingsProps) {
+  // Ensure we have default values for logo position
+  useEffect(() => {
+    if (style.logo && !style.logoPosition) {
+      onChange({ logoPosition: { x: 50, y: 20 } });
+    }
+  }, [style.logo, style.logoPosition, onChange]);
+
   const handlePositionChange = (position: { x: number; y: number }) => {
     onChange({ logoPosition: position });
   };
