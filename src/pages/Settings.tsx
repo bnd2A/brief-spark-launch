@@ -5,7 +5,6 @@ import AppLayout from '@/components/AppLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AccountSettings from '@/components/settings/AccountSettings';
 import SubscriptionSettings from '@/components/settings/SubscriptionSettings';
-import BrandingSettings from '@/components/settings/BrandingSettings';
 import PaymentSettings from '@/components/settings/PaymentSettings';
 import { Card } from '@/components/ui/card';
 
@@ -34,7 +33,6 @@ const Settings = () => {
             <TabsTrigger value="account">Account</TabsTrigger>
             <TabsTrigger value="subscription">Subscription</TabsTrigger>
             <TabsTrigger value="payment">Payment</TabsTrigger>
-            <TabsTrigger value="branding">Branding</TabsTrigger>
           </TabsList>
           
           <Card className="p-6">
@@ -48,10 +46,6 @@ const Settings = () => {
             
             <TabsContent value="payment" className="space-y-4">
               <PaymentSettings />
-            </TabsContent>
-            
-            <TabsContent value="branding" className="space-y-4">
-              <BrandingSettings />
             </TabsContent>
           </Card>
         </Tabs>

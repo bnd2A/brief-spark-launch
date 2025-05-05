@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Card } from '@/components/ui/card';
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -84,73 +85,77 @@ const AccountSettings = () => {
       </div>
       <Separator />
       
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input 
-                    {...field} 
-                    disabled={!isEditing || isLoading} 
-                    placeholder="email@example.com" 
-                  />
-                </FormControl>
-                <FormDescription>
-                  This email will be used for notifications and account recovery
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input 
-                    {...field} 
-                    disabled={!isEditing || isLoading} 
-                    placeholder="Your name" 
-                  />
-                </FormControl>
-                <FormDescription>
-                  Your name as it will appear across the platform
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <div className="flex items-center space-x-2">
-            {!isEditing ? (
-              <Button type="button" onClick={() => setIsEditing(true)}>
-                Edit Profile
-              </Button>
-            ) : (
-              <>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Saving..." : "Save Changes"}
+      <Card className="p-6">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input 
+                      {...field} 
+                      disabled={!isEditing || isLoading} 
+                      placeholder="email@example.com" 
+                      className="max-w-md"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    This email will be used for notifications and account recovery
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input 
+                      {...field} 
+                      disabled={!isEditing || isLoading} 
+                      placeholder="Your name" 
+                      className="max-w-md"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Your name as it will appear across the platform
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="flex items-center space-x-2">
+              {!isEditing ? (
+                <Button type="button" onClick={() => setIsEditing(true)}>
+                  Edit Profile
                 </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setIsEditing(false)} 
-                  disabled={isLoading}
-                >
-                  Cancel
-                </Button>
-              </>
-            )}
-          </div>
-        </form>
-      </Form>
+              ) : (
+                <>
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading ? "Saving..." : "Save Changes"}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsEditing(false)} 
+                    disabled={isLoading}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              )}
+            </div>
+          </form>
+        </Form>
+      </Card>
     </div>
   );
 };

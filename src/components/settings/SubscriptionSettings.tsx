@@ -95,6 +95,8 @@ const SubscriptionSettings = () => {
       });
       // Remove the query parameters
       window.history.replaceState({}, document.title, location.pathname);
+      // Refresh subscription data
+      refetchSubscription();
     } else if (canceled) {
       toast({
         title: "Subscription canceled",
@@ -106,7 +108,7 @@ const SubscriptionSettings = () => {
     }
   }, [location, toast]);
   
-  // Fetch user's current subscription - mock for now since table doesn't exist yet
+  // Fetch user's current subscription
   const { 
     data: userSubscription, 
     isLoading: isLoadingSubscription, 
@@ -116,9 +118,28 @@ const SubscriptionSettings = () => {
     queryFn: async () => {
       if (!user) return null;
       
-      // Using a mock response for now since the user_subscriptions table isn't created yet
-      // In a real app with the table created, we would execute the Supabase query
-      return null; // No active subscription by default
+      try {
+        // Check if user_subscriptions table exists first
+        const { data: subscriptions, error } = await supabase
+          .from('user_subscriptions')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+          
+        if (error && error.message.includes('relation "user_subscriptions" does not exist')) {
+          // Table doesn't exist yet, return null
+          return null;
+        }
+          
+        if (error) {
+          throw error;
+        }
+        
+        return subscriptions;
+      } catch (error) {
+        console.error("Error fetching subscription:", error);
+        return null;
+      }
     },
     enabled: !!user
   });
@@ -174,21 +195,36 @@ const SubscriptionSettings = () => {
   };
   
   const handleCancelSubscription = async () => {
+    if (!user || !userSubscription) {
+      toast({
+        title: "Error",
+        description: "No active subscription found to cancel.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
-      // In a real app, this would connect to the PayPal API to cancel the subscription
-      toast({
-        title: "Coming soon",
-        description: "Subscription cancellation will be fully implemented soon.",
-      });
+      // In a production app, this would connect to the PayPal API to cancel the subscription
+      const confirmCancel = window.confirm("Are you sure you want to cancel your subscription? Your subscription will remain active until the end of the current billing period.");
       
-      // For demo purposes, show a success message
+      if (!confirmCancel) {
+        setIsLoading(false);
+        return;
+      }
+      
+      // Simulate API call for demonstration
       await new Promise(resolve => setTimeout(resolve, 1000));
+      
       toast({
         title: "Subscription Canceled",
         description: "Your subscription will remain active until the end of the billing period."
       });
+      
+      // Refresh subscription data
+      refetchSubscription();
       
     } catch (error: any) {
       toast({
@@ -229,7 +265,7 @@ const SubscriptionSettings = () => {
       </div>
       <Separator />
       
-      {userSubscription && (
+      {userSubscription && userSubscription.status === 'ACTIVE' && (
         <Card className="bg-primary/5 border-primary/20 mb-6">
           <CardHeader>
             <CardTitle className="text-lg">Current Subscription</CardTitle>
@@ -334,7 +370,7 @@ const SubscriptionSettings = () => {
         </Card>
       </div>
       
-      {currentPlanId !== 'free' && (
+      {userSubscription && userSubscription.status === 'ACTIVE' && (
         <div className="mt-8">
           <Button 
             variant="outline" 
