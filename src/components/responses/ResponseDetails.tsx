@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, FileDown } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { useLoadBrief } from '@/hooks/useLoadBrief';
+import { exportAsMarkdown, exportAsPDF } from '@/utils/exportUtils';
 
 interface ResponseDetailsProps {
   response: {
@@ -15,6 +16,7 @@ interface ResponseDetailsProps {
     }[] | any; // Allow for potential non-array type
     respondent_email?: string | null;
     brief_id: string;
+    submitted_at: string;
   };
 }
 
@@ -60,11 +62,44 @@ export const ResponseDetails = ({ response }: ResponseDetailsProps) => {
   }, [response.answers, brief]);
 
   const exportResponse = (format: 'pdf' | 'markdown') => {
-    toast({
-      title: `Exporting as ${format === 'pdf' ? 'PDF' : 'Markdown'}`,
-      description: "Your file is being prepared for download."
-    });
-    // Actual export implementation would go here in a real app
+    if (!brief) {
+      toast({
+        title: "Export failed",
+        description: "Brief details could not be loaded.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      if (format === 'markdown') {
+        exportAsMarkdown(
+          brief.title,
+          response.respondent_email,
+          response.submitted_at,
+          normalizedAnswers
+        );
+      } else {
+        exportAsPDF(
+          brief.title,
+          response.respondent_email,
+          response.submitted_at,
+          normalizedAnswers
+        );
+      }
+      
+      toast({
+        title: `Export successful`,
+        description: `Response exported as ${format === 'pdf' ? 'PDF' : 'Markdown'}.`
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export failed",
+        description: `Could not export as ${format === 'pdf' ? 'PDF' : 'Markdown'}.`,
+        variant: "destructive"
+      });
+    }
   };
 
   return (
