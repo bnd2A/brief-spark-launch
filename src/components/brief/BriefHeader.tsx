@@ -19,21 +19,21 @@ export const BriefHeader: React.FC<BriefHeaderProps> = ({ title, description, st
   const logoSize = style.logoSize || 100;
 
   // Calculate logo position styles
-  const getLogoStyles = () => {
+  const getLogoStyles = (): React.CSSProperties => {
     if (!style.logo) return {};
     
     // Default position if not specified
     const position = style.logoPosition || { x: 50, y: 20 };
     
     return {
-      position: 'relative',
+      position: 'relative' as 'relative',
       display: 'flex',
       justifyContent: 'center',
       marginBottom: '1rem',
     };
   };
 
-  const getLogoImageStyles = () => {
+  const getLogoImageStyles = (): React.CSSProperties => {
     if (!style.logo) return {};
     
     // Default position if not specified
@@ -41,12 +41,12 @@ export const BriefHeader: React.FC<BriefHeaderProps> = ({ title, description, st
     
     return {
       maxHeight: `${logoSize}px`,
-      objectFit: 'contain',
-      position: style.headerStyle === 'branded' ? 'relative' : 'absolute',
+      objectFit: 'contain' as 'contain',
+      position: style.headerStyle === 'branded' ? 'relative' as 'relative' : 'absolute' as 'absolute',
       left: style.headerStyle === 'branded' ? 'auto' : `${position.x}%`,
       top: style.headerStyle === 'branded' ? 'auto' : `${position.y}%`,
       transform: style.headerStyle === 'branded' ? 'none' : 'translate(-50%, -50%)',
-    } as React.CSSProperties;
+    };
   };
 
   return (
