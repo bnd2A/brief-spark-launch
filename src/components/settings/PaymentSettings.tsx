@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useQuery } from '@tanstack/react-query';
+import { PaymentMethod } from '@/types/paymentMethod';
 
 // PayPal logo component - using the uploaded image
 const PayPalLogo = () => (
@@ -22,17 +23,6 @@ const PayPalLogo = () => (
     height="24"
   />
 );
-
-interface PaymentMethod {
-  id: string;
-  type: string;
-  email?: string;
-  last4?: string;
-  brand?: string;
-  expMonth?: number;
-  expYear?: number;
-  isDefault: boolean;
-}
 
 const PaymentSettings = () => {
   const { user } = useAuth();
@@ -53,15 +43,17 @@ const PaymentSettings = () => {
       if (!user) return [];
       
       try {
-        const { data } = await supabase
+        // Cast the response to PaymentMethod[] to resolve type issues
+        const { data, error } = await supabase
           .from('payment_methods')
           .select('*')
           .eq('user_id', user.id);
           
-        return data || [];
+        if (error) throw error;
+        return (data || []) as PaymentMethod[];
       } catch (error) {
         console.error('Error fetching payment methods:', error);
-        return [];
+        return [] as PaymentMethod[];
       }
     },
     enabled: !!user
@@ -111,9 +103,10 @@ const PaymentSettings = () => {
         // Add mock PayPal account
         const newMethod: PaymentMethod = {
           id: `pm_paypal_${Date.now()}`,
+          user_id: user?.id || '',
           type: "paypal",
           email: user?.email || "user@example.com",
-          isDefault: paymentMethods.length === 0,
+          is_default: paymentMethods.length === 0,
         };
         
         setPaymentMethods([...paymentMethods, newMethod]);
@@ -151,8 +144,9 @@ const PaymentSettings = () => {
       // For this demo, we'll simulate adding the card to the database
       const [expMonth, expYear] = expDate.split('/').map(part => part.trim());
       
-      const newCard = {
-        user_id: user?.id,
+      // Create new card record
+      const newCardData: Omit<PaymentMethod, 'id'> = {
+        user_id: user?.id || '',
         type: 'card',
         last4: cardNumber.slice(-4),
         brand: getCardBrand(cardNumber),
@@ -161,9 +155,10 @@ const PaymentSettings = () => {
         is_default: paymentMethods.length === 0
       };
       
+      // Insert into Supabase with type casting
       const { data, error } = await supabase
         .from('payment_methods')
-        .insert(newCard)
+        .insert(newCardData as any)
         .select('*')
         .single();
       
@@ -175,15 +170,7 @@ const PaymentSettings = () => {
       });
       
       // Add the new card to local state
-      const newCardMethod: PaymentMethod = {
-        id: data.id,
-        type: "card",
-        last4: data.last4,
-        brand: data.brand,
-        expMonth: data.exp_month,
-        expYear: data.exp_year,
-        isDefault: data.is_default,
-      };
+      const newCardMethod = data as PaymentMethod;
       
       setPaymentMethods([...paymentMethods, newCardMethod]);
       setIsDialogOpen(false);
@@ -264,19 +251,19 @@ const PaymentSettings = () => {
       // First, set all payment methods to non-default
       await supabase
         .from('payment_methods')
-        .update({ is_default: false })
+        .update({ is_default: false } as any)
         .eq('user_id', user?.id);
       
       // Set the selected payment method as default
       await supabase
         .from('payment_methods')
-        .update({ is_default: true })
+        .update({ is_default: true } as any)
         .eq('id', id);
       
       // Update local state
       setPaymentMethods(paymentMethods.map(method => ({
         ...method,
-        isDefault: method.id === id
+        is_default: method.id === id
       })));
       
       toast({
@@ -470,17 +457,17 @@ const PaymentSettings = () => {
                           ? `${method.brand} •••• ${method.last4}`
                           : `PayPal (${method.email})`
                         } 
-                        {method.isDefault && <span className="ml-2 text-xs bg-muted px-2 py-1 rounded">Default</span>}
+                        {method.is_default && <span className="ml-2 text-xs bg-muted px-2 py-1 rounded">Default</span>}
                       </p>
-                      {method.type === 'card' && method.expMonth && method.expYear && (
+                      {method.type === 'card' && method.exp_month && method.exp_year && (
                         <p className="text-xs text-muted-foreground">
-                          Expires {method.expMonth}/{method.expYear}
+                          Expires {method.exp_month}/{method.exp_year}
                         </p>
                       )}
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    {!method.isDefault && (
+                    {!method.is_default && (
                       <Button 
                         size="sm" 
                         variant="outline"
