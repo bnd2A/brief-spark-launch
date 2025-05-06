@@ -16,6 +16,8 @@ const Settings = () => {
   let initialTab = "account";
   if (queryParams.get('success') || queryParams.get('canceled')) {
     initialTab = "subscription";
+  } else if (queryParams.get('paypal_connected')) {
+    initialTab = "payment";
   }
   
   const [activeTab, setActiveTab] = useState(initialTab);

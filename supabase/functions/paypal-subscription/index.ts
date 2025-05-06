@@ -14,6 +14,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Helper for step-by-step logging
+const logStep = (step: string, details?: any) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[PAYPAL-SUBSCRIPTION] ${step}${detailsStr}`);
+};
+
 // Get PayPal access token
 async function getPayPalAccessToken() {
   const auth = btoa(`${PAYPAL_CLIENT_ID}:${PAYPAL_SECRET}`);
@@ -37,7 +43,7 @@ async function getPayPalAccessToken() {
 }
 
 // Create a subscription plan in PayPal if it doesn't exist
-async function getOrCreatePlan(token, planData) {
+async function getOrCreatePlan(token: string, planData: any) {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   
   // Check if plan exists in our database
@@ -149,7 +155,7 @@ async function getOrCreatePlan(token, planData) {
 }
 
 // Create subscription
-async function createSubscription(token, planId, userId) {
+async function createSubscription(token: string, planId: string, userId: string) {
   const subscriptionRes = await fetch(`${PAYPAL_API_URL}/v1/billing/subscriptions`, {
     method: "POST",
     headers: {
@@ -183,13 +189,41 @@ async function createSubscription(token, planId, userId) {
   return await subscriptionRes.json();
 }
 
+// Connect a PayPal account for payment methods
+async function connectPayPalAccount(token: string, userId: string) {
+  logStep("Creating PayPal connection for user", { userId });
+  
+  const connectionReq = await fetch(`${PAYPAL_API_URL}/v1/identity/generate-token`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+    }
+  });
+  
+  if (!connectionReq.ok) {
+    const error = await connectionReq.json();
+    console.error("PayPal connection token error:", error);
+    throw new Error("Failed to create PayPal connection");
+  }
+  
+  const connectionData = await connectionReq.json();
+  
+  // Create a PayPal approval URL
+  const approvalUrl = `https://www.paypal.com/connect?flowEntry=static&client_id=${PAYPAL_CLIENT_ID}&scope=openid email&redirect_uri=${encodeURIComponent(`${Deno.env.get("PUBLIC_APP_URL") || "https://zdpileidtdzlambmbsiq.lovable.dev"}/app/settings?paypal_connected=true`)}&state=${userId}`;
+  
+  return {
+    approve_url: approvalUrl
+  };
+}
+
 // Handle webhook events from PayPal
-async function handleWebhook(request) {
+async function handleWebhook(request: Request) {
   const body = await request.json();
   const eventType = body.event_type;
   const resource = body.resource;
   
-  console.log(`Handling PayPal webhook event: ${eventType}`);
+  logStep(`Handling PayPal webhook event: ${eventType}`);
   
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   
@@ -261,6 +295,37 @@ async function handleWebhook(request) {
   }
 }
 
+// Handle PayPal connected callback
+async function handlePayPalConnected(userId: string, authCode: string) {
+  logStep("Handling PayPal connected callback", { userId });
+  
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  
+  try {
+    // In a real implementation, you would exchange the auth code for tokens
+    // and retrieve the PayPal account information
+    
+    // For this simplified example, we'll just record that the PayPal account is connected
+    await supabase.from("payment_methods").insert({
+      user_id: userId,
+      type: "paypal",
+      email: null, // In a real implementation, you would get this from PayPal 
+      is_default: true
+    });
+    
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("Error handling PayPal connected:", error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight request
   if (req.method === "OPTIONS") {
@@ -276,7 +341,20 @@ serve(async (req) => {
       return handleWebhook(req);
     }
     
-    const { userId, action, planType } = await req.json();
+    // Handle PayPal connected callback
+    if (path === "paypal-connected") {
+      const searchParams = new URLSearchParams(url.search);
+      const userId = searchParams.get("state");
+      const authCode = searchParams.get("code");
+      
+      if (!userId || !authCode) {
+        throw new Error("Missing required parameters");
+      }
+      
+      return handlePayPalConnected(userId, authCode);
+    }
+    
+    const { userId, action, planType, paymentMethodId } = await req.json();
     
     if (!userId) {
       throw new Error("User ID is required");
@@ -284,64 +362,79 @@ serve(async (req) => {
     
     const token = await getPayPalAccessToken();
     
-    if (action === "create_subscription") {
-      // Define plan data based on requested plan type
-      let planData;
-      if (planType === "pro_monthly") {
-        planData = {
-          name: "Freelance Pro Monthly",
-          description: "Professional plan with unlimited briefs and premium features",
-          price: 9.00,
-          interval: "MONTH",
-          features: [
-            "Unlimited briefs",
-            "PDF & Markdown export",
-            "White-labeling",
-            "Custom background & logo",
-            "Email notifications",
-            "Priority support"
-          ]
-        };
-      } else if (planType === "pro_yearly") {
-        planData = {
-          name: "Freelance Pro Yearly",
-          description: "Professional plan with unlimited briefs and premium features (annual billing)",
-          price: 84.00,
-          interval: "YEAR",
-          features: [
-            "Unlimited briefs",
-            "PDF & Markdown export",
-            "White-labeling",
-            "Custom background & logo",
-            "Email notifications",
-            "Priority support"
-          ]
-        };
-      } else {
-        throw new Error("Invalid plan type");
-      }
-      
-      // Get or create plan in PayPal
-      const planId = await getOrCreatePlan(token, planData);
-      
-      // Create subscription
-      const subscription = await createSubscription(token, planId, userId);
-      
-      return new Response(JSON.stringify({
-        success: true,
-        subscription_id: subscription.id,
-        approve_url: subscription.links.find(link => link.rel === "approve").href,
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Handle different actions
+    switch (action) {
+      case "create_subscription":
+        // Define plan data based on requested plan type
+        let planData;
+        if (planType === "pro_monthly") {
+          planData = {
+            name: "Freelance Pro Monthly",
+            description: "Professional plan with unlimited briefs and premium features",
+            price: 9.00,
+            interval: "MONTH",
+            features: [
+              "Unlimited briefs",
+              "PDF & Markdown export",
+              "White-labeling",
+              "Custom background & logo",
+              "Email notifications",
+              "Priority support"
+            ]
+          };
+        } else if (planType === "pro_yearly") {
+          planData = {
+            name: "Freelance Pro Yearly",
+            description: "Professional plan with unlimited briefs and premium features (annual billing)",
+            price: 84.00,
+            interval: "YEAR",
+            features: [
+              "Unlimited briefs",
+              "PDF & Markdown export",
+              "White-labeling",
+              "Custom background & logo",
+              "Email notifications",
+              "Priority support"
+            ]
+          };
+        } else {
+          throw new Error("Invalid plan type");
+        }
+        
+        // Get or create plan in PayPal
+        const planId = await getOrCreatePlan(token, planData);
+        
+        // Create subscription
+        const subscription = await createSubscription(token, planId, userId);
+        
+        return new Response(JSON.stringify({
+          success: true,
+          subscription_id: subscription.id,
+          approve_url: subscription.links.find(link => link.rel === "approve").href,
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+        
+      case "connect_account":
+        // Connect a PayPal account for payment methods
+        const connectionData = await connectPayPalAccount(token, userId);
+        
+        return new Response(JSON.stringify({
+          success: true,
+          approve_url: connectionData.approve_url,
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+        
+      default:
+        // Default response for unsupported action
+        return new Response(JSON.stringify({ error: "Unsupported action" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
     }
-    
-    // Default response for unsupported action
-    return new Response(JSON.stringify({ error: "Unsupported action" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
   } catch (error) {
     console.error(error);
     return new Response(JSON.stringify({ error: error.message }), {

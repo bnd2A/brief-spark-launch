@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/providers/AuthProvider';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -12,25 +13,15 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useQuery } from '@tanstack/react-query';
 
-// PayPal logo component
+// PayPal logo component - using the uploaded image
 const PayPalLogo = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <path d="M20.9805 6.65C20.2138 9.95583 18.0722 11.325 15.0555 11.325H13.8555C13.4305 11.325 13.0888 11.6333 13.0055 12.05L12.2805 16.8C12.2305 17.0583 12.0222 17.2667 11.7638 17.2667H8.75883C8.41716 17.2667 8.15883 17 8.2255 16.6583L10.0055 4.675C10.0638 4.40833 10.3055 4.21667 10.5805 4.21667H17.6555C18.6222 4.21667 19.5138 4.45833 20.1805 5.00833C20.722 5.45833 21.0555 5.98333 21.1888 6.60833C21.1305 6.29167 21.0805 6.45833 20.9805 6.65Z" fill="#253B80"/>
-    <path d="M21.1889 6.61667C21.1139 8.075 20.7806 9.15 20.1139 9.96667C19.0889 11.3583 17.3306 11.8417 15.0556 11.8417H13.3972C12.9639 11.8417 12.5972 12.1417 12.5056 12.5667L11.3056 20.0333C11.2472 20.3583 10.9722 20.5833 10.6472 20.5833H7.78056C7.45556 20.5833 7.22222 20.3333 7.28056 20.0167L7.40556 19.1083L7.92222 15.7333L8.22556 13.9C8.31389 13.475 8.68056 13.175 9.11389 13.175H10.3056C13.7889 13.175 16.3889 11.725 17.2639 7.66667C17.6139 6.075 17.4389 4.75833 16.5889 3.825C16.4722 3.7 16.3306 3.58333 16.1889 3.48333C16.7056 3.46667 17.1972 3.51667 17.6639 3.63333C18.9139 3.975 19.7806 4.63333 20.3389 5.60833C20.7472 6.30833 20.9889 7.15 20.9889 8.09167C21.1889 7.61667 21.1889 7.1 21.1889 6.61667Z" fill="#179BD7"/>
-    <path d="M8.24219 11.9917C8.19219 12.3 7.85885 12.5917 7.54219 12.5917H4.60885C4.34219 12.5917 4.11719 12.3917 4.09219 12.125C4.09219 12.1167 4.09219 12.1083 4.09219 12.1V12.0833L4.79219 7.41667C4.85052 7.03333 5.18386 6.75 5.57552 6.75H8.33386C8.56719 6.75 8.77552 6.825 8.95052 6.975C9.30885 7.23333 9.50885 7.65833 9.44219 8.14167C9.20052 9.75833 8.76719 10.9833 8.24219 11.9917Z" fill="#253B80"/>
-    <path d="M3.72477 13.0333C3.67477 13.35 3.34977 13.6 2.99977 13.6H0.424766C0.183266 13.6 -0.024734 13.3917 0.000266089 13.15L1.46693 3.48333C1.52527 3.21667 1.76693 3.03333 2.04977 3.03333H6.33311C7.1998 3.03333 7.92476 3.25 8.45809 3.675C9.13311 4.225 9.40809 5.025 9.3081 6.03333C9.0581 8.525 7.5081 10.1083 5.0831 10.1083H3.59144C3.20811 10.1083 2.8831 10.3917 2.80811 10.775L2.4081 13.0333H3.72477Z" fill="#179BD7"/>
-  </svg>
+  <img 
+    src="/lovable-uploads/0f1aa099-86d5-45f5-9d09-51b0ac0b5837.png" 
+    alt="PayPal" 
+    width="24" 
+    height="24"
+  />
 );
-
-// Mock payment method data
-const MOCK_PAYMENT_METHODS = [
-  {
-    id: 'pm_1',
-    type: 'paypal',
-    email: 'user@example.com',
-    isDefault: true
-  }
-];
 
 interface PaymentMethod {
   id: string;
@@ -50,55 +41,89 @@ const PaymentSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [enableCreditCard, setEnableCreditCard] = useState(false);
+  const [cardNumber, setCardNumber] = useState('');
+  const [expDate, setExpDate] = useState('');
+  const [cvc, setCvc] = useState('');
+  const [cardName, setCardName] = useState('');
   
   // Fetch user's payment methods
-  const { data: fetchedPaymentMethods, isLoading: isLoadingPaymentMethods } = useQuery({
+  const { data: fetchedPaymentMethods, isLoading: isLoadingPaymentMethods, refetch } = useQuery({
     queryKey: ['paymentMethods', user?.id],
     queryFn: async () => {
-      // In a real app, we'd fetch this from our database
-      // Simulating API call delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      if (!user) return [];
       
-      // For demo purposes, return mock data or empty array based on user
-      return user ? MOCK_PAYMENT_METHODS : [];
+      try {
+        const { data } = await supabase
+          .from('payment_methods')
+          .select('*')
+          .eq('user_id', user.id);
+          
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching payment methods:', error);
+        return [];
+      }
     },
     enabled: !!user
   });
   
   // Update state when data is fetched
   useEffect(() => {
-    if (fetchedPaymentMethods) {
+    if (fetchedPaymentMethods && Array.isArray(fetchedPaymentMethods)) {
       setPaymentMethods(fetchedPaymentMethods);
     }
   }, [fetchedPaymentMethods]);
   
-  const handleAddPaymentMethod = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const connectWithPayPal = async () => {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      
-      toast({
-        title: "PayPal Connected",
-        description: "Your PayPal account has been connected successfully.",
+      // Call PayPal subscription function
+      const response = await fetch('/api/paypal-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({
+          userId: user?.id,
+          action: 'connect_account'
+        })
       });
       
-      // Add mock PayPal account
-      const newMethod: PaymentMethod = {
-        id: `pm_${Date.now()}`,
-        type: "paypal",
-        email: "user@example.com",
-        isDefault: paymentMethods.length === 0,
-      };
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to connect PayPal account');
+      }
       
-      setPaymentMethods([...paymentMethods, newMethod]);
-      setIsDialogOpen(false);
+      const result = await response.json();
+      
+      if (result.approve_url) {
+        // Redirect to PayPal for approval
+        window.location.href = result.approve_url;
+      } else {
+        // Handle success directly if no approval needed
+        toast({
+          title: "PayPal Connected",
+          description: "Your PayPal account has been connected successfully.",
+        });
+        
+        // Add mock PayPal account
+        const newMethod: PaymentMethod = {
+          id: `pm_paypal_${Date.now()}`,
+          type: "paypal",
+          email: user?.email || "user@example.com",
+          isDefault: paymentMethods.length === 0,
+        };
+        
+        setPaymentMethods([...paymentMethods, newMethod]);
+        setIsDialogOpen(false);
+        refetch();
+      }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to add payment method",
+        description: error.message || "Failed to connect PayPal account",
         variant: "destructive",
       });
     } finally {
@@ -106,12 +131,110 @@ const PaymentSettings = () => {
     }
   };
   
+  const handleAddCard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    // Basic validation
+    if (!cardNumber || !expDate || !cvc || !cardName) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all card details",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      // In a real application, you would use a secure payment gateway SDK
+      // For this demo, we'll simulate adding the card to the database
+      const [expMonth, expYear] = expDate.split('/').map(part => part.trim());
+      
+      const newCard = {
+        user_id: user?.id,
+        type: 'card',
+        last4: cardNumber.slice(-4),
+        brand: getCardBrand(cardNumber),
+        exp_month: parseInt(expMonth),
+        exp_year: parseInt(`20${expYear}`), // Assuming 2-digit year format
+        is_default: paymentMethods.length === 0
+      };
+      
+      const { data, error } = await supabase
+        .from('payment_methods')
+        .insert(newCard)
+        .select('*')
+        .single();
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Card Added",
+        description: "Your card has been added successfully.",
+      });
+      
+      // Add the new card to local state
+      const newCardMethod: PaymentMethod = {
+        id: data.id,
+        type: "card",
+        last4: data.last4,
+        brand: data.brand,
+        expMonth: data.exp_month,
+        expYear: data.exp_year,
+        isDefault: data.is_default,
+      };
+      
+      setPaymentMethods([...paymentMethods, newCardMethod]);
+      setIsDialogOpen(false);
+      
+      // Reset form fields
+      setCardNumber('');
+      setExpDate('');
+      setCvc('');
+      setCardName('');
+      setEnableCreditCard(false);
+      
+      // Refresh payment methods
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add card",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const getCardBrand = (cardNumber: string): string => {
+    // Very basic card brand detection based on first digit
+    const firstDigit = cardNumber.charAt(0);
+    switch (firstDigit) {
+      case '4':
+        return 'Visa';
+      case '5':
+        return 'Mastercard';
+      case '3':
+        return 'Amex';
+      case '6':
+        return 'Discover';
+      default:
+        return 'Unknown';
+    }
+  };
+  
   const handleRemovePaymentMethod = async (id: string) => {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const { error } = await supabase
+        .from('payment_methods')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
       
       // Update local state
       setPaymentMethods(paymentMethods.filter(method => method.id !== id));
@@ -120,6 +243,9 @@ const PaymentSettings = () => {
         title: "Payment method removed",
         description: "Your payment method has been removed successfully."
       });
+      
+      // Refresh payment methods
+      refetch();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -135,8 +261,17 @@ const PaymentSettings = () => {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // First, set all payment methods to non-default
+      await supabase
+        .from('payment_methods')
+        .update({ is_default: false })
+        .eq('user_id', user?.id);
+      
+      // Set the selected payment method as default
+      await supabase
+        .from('payment_methods')
+        .update({ is_default: true })
+        .eq('id', id);
       
       // Update local state
       setPaymentMethods(paymentMethods.map(method => ({
@@ -148,6 +283,9 @@ const PaymentSettings = () => {
         title: "Default payment method updated",
         description: "Your default payment method has been updated successfully."
       });
+      
+      // Refresh payment methods
+      refetch();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -205,7 +343,7 @@ const PaymentSettings = () => {
                 </DialogDescription>
               </DialogHeader>
               
-              <form onSubmit={handleAddPaymentMethod}>
+              <form onSubmit={handleAddCard}>
                 <div className="grid gap-4 py-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
@@ -223,23 +361,47 @@ const PaymentSettings = () => {
                     <>
                       <div className="space-y-2">
                         <Label htmlFor="cardNumber">Card Number</Label>
-                        <Input id="cardNumber" placeholder="1234 5678 9012 3456" />
+                        <Input 
+                          id="cardNumber" 
+                          placeholder="1234 5678 9012 3456" 
+                          value={cardNumber}
+                          onChange={(e) => setCardNumber(e.target.value)}
+                          required
+                        />
                       </div>
                       
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="expDate">Expiration Date</Label>
-                          <Input id="expDate" placeholder="MM / YY" />
+                          <Input 
+                            id="expDate" 
+                            placeholder="MM / YY" 
+                            value={expDate}
+                            onChange={(e) => setExpDate(e.target.value)}
+                            required
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="cvc">CVC</Label>
-                          <Input id="cvc" placeholder="123" />
+                          <Input 
+                            id="cvc" 
+                            placeholder="123" 
+                            value={cvc}
+                            onChange={(e) => setCvc(e.target.value)}
+                            required
+                          />
                         </div>
                       </div>
                       
                       <div className="space-y-2">
                         <Label htmlFor="cardName">Name on Card</Label>
-                        <Input id="cardName" placeholder="John Doe" />
+                        <Input 
+                          id="cardName" 
+                          placeholder="John Doe" 
+                          value={cardName}
+                          onChange={(e) => setCardName(e.target.value)}
+                          required
+                        />
                       </div>
                     </>
                   ) : (
@@ -251,7 +413,8 @@ const PaymentSettings = () => {
                       <Button 
                         variant="outline" 
                         className="bg-blue-50 text-blue-600 border-blue-200"
-                        type="submit"
+                        type="button"
+                        onClick={connectWithPayPal}
                         disabled={isLoading}
                       >
                         {isLoading ? (
@@ -272,11 +435,16 @@ const PaymentSettings = () => {
                 
                 {enableCreditCard && (
                   <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isLoading}>
                       Cancel
                     </Button>
                     <Button type="submit" disabled={isLoading}>
-                      {isLoading ? "Adding..." : "Add Card"}
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Adding...
+                        </>
+                      ) : "Add Card"}
                     </Button>
                   </DialogFooter>
                 )}
