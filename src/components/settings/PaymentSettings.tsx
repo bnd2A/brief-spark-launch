@@ -43,8 +43,8 @@ const PaymentSettings = () => {
       if (!user) return [];
       
       try {
-        // Cast the response to PaymentMethod[] to resolve type issues
-        const { data, error } = await supabase
+        // Use any type to bypass TypeScript constraints for tables not in the types
+        const { data, error } = await (supabase as any)
           .from('payment_methods')
           .select('*')
           .eq('user_id', user.id);
@@ -62,7 +62,7 @@ const PaymentSettings = () => {
   // Update state when data is fetched
   useEffect(() => {
     if (fetchedPaymentMethods && Array.isArray(fetchedPaymentMethods)) {
-      setPaymentMethods(fetchedPaymentMethods);
+      setPaymentMethods(fetchedPaymentMethods as PaymentMethod[]);
     }
   }, [fetchedPaymentMethods]);
   
@@ -156,9 +156,9 @@ const PaymentSettings = () => {
       };
       
       // Insert into Supabase with type casting
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('payment_methods')
-        .insert(newCardData as any)
+        .insert(newCardData)
         .select('*')
         .single();
       
@@ -216,7 +216,7 @@ const PaymentSettings = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('payment_methods')
         .delete()
         .eq('id', id);
@@ -249,15 +249,15 @@ const PaymentSettings = () => {
     
     try {
       // First, set all payment methods to non-default
-      await supabase
+      await (supabase as any)
         .from('payment_methods')
-        .update({ is_default: false } as any)
+        .update({ is_default: false })
         .eq('user_id', user?.id);
       
       // Set the selected payment method as default
-      await supabase
+      await (supabase as any)
         .from('payment_methods')
-        .update({ is_default: true } as any)
+        .update({ is_default: true })
         .eq('id', id);
       
       // Update local state
