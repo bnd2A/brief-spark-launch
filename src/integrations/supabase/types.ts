@@ -101,6 +101,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          interval: string | null
+          next_billing_time: string | null
+          plan_id: string
+          plan_name: string | null
+          status: string
+          subscription_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interval?: string | null
+          next_billing_time?: string | null
+          plan_id: string
+          plan_name?: string | null
+          status: string
+          subscription_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interval?: string | null
+          next_billing_time?: string | null
+          plan_id?: string
+          plan_name?: string | null
+          status?: string
+          subscription_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

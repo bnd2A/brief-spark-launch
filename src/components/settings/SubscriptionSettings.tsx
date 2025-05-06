@@ -20,13 +20,18 @@ interface SubscriptionPlan {
   features: string[];
 }
 
+// This interface should match the user_subscriptions table structure
 interface UserSubscription {
   id: string;
+  user_id: string;
+  subscription_id: string;
   status: string;
   plan_id: string;
+  plan_name: string | null;
+  interval: string | null;
   next_billing_time: string | null;
-  plan_name?: string;
-  interval?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const SUBSCRIPTION_PLANS = [
@@ -120,22 +125,18 @@ const SubscriptionSettings = () => {
       
       try {
         // Check if user_subscriptions table exists first
-        const { data: subscriptions, error } = await supabase
+        const { data, error } = await supabase
           .from('user_subscriptions')
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle();
           
-        if (error && error.message.includes('relation "user_subscriptions" does not exist')) {
-          // Table doesn't exist yet, return null
+        if (error) {
+          console.error("Error fetching subscription:", error);
           return null;
         }
-          
-        if (error) {
-          throw error;
-        }
         
-        return subscriptions;
+        return data as UserSubscription | null;
       } catch (error) {
         console.error("Error fetching subscription:", error);
         return null;
