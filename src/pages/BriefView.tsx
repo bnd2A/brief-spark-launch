@@ -9,6 +9,7 @@ import { BriefNotFound } from '@/components/brief/BriefNotFound';
 import { BriefHeader } from '@/components/brief/BriefHeader';
 import { BriefQuestionForm } from '@/components/brief/BriefQuestionForm';
 import { Button } from '@/components/ui/button';
+import { Copy } from 'lucide-react';
 
 const BriefView = () => {
   const { id } = useParams();
@@ -86,7 +87,17 @@ const BriefView = () => {
           <h2 className="font-bold text-2xl">Briefly</h2>
         </div>
         
-        {/* Removed the Copy Link button here */}
+        <div className="mb-4 flex justify-end">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={copyLinkToClipboard}
+            className="gap-2"
+          >
+            <Copy size={16} />
+            Copy Link
+          </Button>
+        </div>
         
         <Card className="overflow-hidden">
           {style.logo && style.headerStyle !== 'branded' && (

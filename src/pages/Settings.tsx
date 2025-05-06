@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import AppLayout from '@/components/AppLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +7,8 @@ import AccountSettings from '@/components/settings/AccountSettings';
 import SubscriptionSettings from '@/components/settings/SubscriptionSettings';
 import PaymentSettings from '@/components/settings/PaymentSettings';
 import { Card } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { CheckCircle2 } from 'lucide-react';
 
 const Settings = () => {
   const location = useLocation();
@@ -21,6 +23,23 @@ const Settings = () => {
   }
   
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Check for success messages in URL params
+  useEffect(() => {
+    if (queryParams.get('paypal_connected') === 'true') {
+      setSuccessMessage('PayPal account successfully connected!');
+      setShowSuccessAlert(true);
+      
+      // Auto-hide the alert after 5 seconds
+      const timer = setTimeout(() => {
+        setShowSuccessAlert(false);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [queryParams]);
 
   return (
     <AppLayout>
@@ -29,6 +48,13 @@ const Settings = () => {
           <h1 className="text-3xl font-bold">Settings</h1>
           <p className="text-muted-foreground">Manage your account and preferences</p>
         </div>
+        
+        {showSuccessAlert && (
+          <Alert className="bg-green-50 border-green-200 text-green-800">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <AlertDescription className="ml-2">{successMessage}</AlertDescription>
+          </Alert>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="bg-background">

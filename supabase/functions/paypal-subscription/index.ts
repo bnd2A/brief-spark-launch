@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -193,28 +192,36 @@ async function createSubscription(token: string, planId: string, userId: string)
 async function connectPayPalAccount(token: string, userId: string) {
   logStep("Creating PayPal connection for user", { userId });
   
-  const connectionReq = await fetch(`${PAYPAL_API_URL}/v1/identity/generate-token`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
+  try {
+    const connectionReq = await fetch(`${PAYPAL_API_URL}/v1/identity/generate-token`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      }
+    });
+    
+    if (!connectionReq.ok) {
+      const error = await connectionReq.json();
+      console.error("PayPal connection token error:", error);
+      throw new Error("Failed to create PayPal connection");
     }
-  });
-  
-  if (!connectionReq.ok) {
-    const error = await connectionReq.json();
-    console.error("PayPal connection token error:", error);
-    throw new Error("Failed to create PayPal connection");
+    
+    const connectionData = await connectionReq.json();
+    console.log("Connection data:", connectionData);
+    
+    // Create a PayPal approval URL with return URL that includes the paypal_connected=true parameter
+    const returnUrl = `${Deno.env.get("PUBLIC_APP_URL") || "https://zdpileidtdzlambmbsiq.lovable.dev"}/app/settings?paypal_connected=true`;
+    const approvalUrl = `https://www.paypal.com/connect?flowEntry=static&client_id=${PAYPAL_CLIENT_ID}&scope=openid email&redirect_uri=${encodeURIComponent(returnUrl)}&state=${userId}`;
+    
+    return {
+      approve_url: approvalUrl,
+      client_token: connectionData.client_token
+    };
+  } catch (error) {
+    console.error("Error connecting PayPal account:", error);
+    throw error;
   }
-  
-  const connectionData = await connectionReq.json();
-  
-  // Create a PayPal approval URL
-  const approvalUrl = `https://www.paypal.com/connect?flowEntry=static&client_id=${PAYPAL_CLIENT_ID}&scope=openid email&redirect_uri=${encodeURIComponent(`${Deno.env.get("PUBLIC_APP_URL") || "https://zdpileidtdzlambmbsiq.lovable.dev"}/app/settings?paypal_connected=true`)}&state=${userId}`;
-  
-  return {
-    approve_url: approvalUrl
-  };
 }
 
 // Handle webhook events from PayPal
@@ -305,13 +312,30 @@ async function handlePayPalConnected(userId: string, authCode: string) {
     // In a real implementation, you would exchange the auth code for tokens
     // and retrieve the PayPal account information
     
-    // For this simplified example, we'll just record that the PayPal account is connected
-    await supabase.from("payment_methods").insert({
-      user_id: userId,
-      type: "paypal",
-      email: null, // In a real implementation, you would get this from PayPal 
-      is_default: true
-    });
+    // Check if user already has a PayPal payment method
+    const { data: existingMethods } = await supabase
+      .from("payment_methods")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("type", "paypal");
+    
+    if (existingMethods && existingMethods.length > 0) {
+      // Update the existing PayPal method instead of creating a new one
+      await supabase
+        .from("payment_methods")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", existingMethods[0].id);
+    } else {
+      // For this simplified example, we'll just record that the PayPal account is connected
+      await supabase
+        .from("payment_methods")
+        .insert({
+          user_id: userId,
+          type: "paypal",
+          email: null, // In a real implementation, you would get this from PayPal 
+          is_default: true
+        });
+    }
     
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -423,6 +447,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({
           success: true,
           approve_url: connectionData.approve_url,
+          client_token: connectionData.client_token,
         }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },

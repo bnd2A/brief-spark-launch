@@ -5,14 +5,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CreditCard, Plus, Loader2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { CreditCard, Plus, Loader2, Check } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useQuery } from '@tanstack/react-query';
 import { PaymentMethod } from '@/types/paymentMethod';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // PayPal logo component - using the uploaded image
 const PayPalLogo = () => (
@@ -35,6 +37,7 @@ const PaymentSettings = () => {
   const [expDate, setExpDate] = useState('');
   const [cvc, setCvc] = useState('');
   const [cardName, setCardName] = useState('');
+  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'connecting' | 'success' | 'error'>('idle');
   
   // Fetch user's payment methods
   const { data: fetchedPaymentMethods, isLoading: isLoadingPaymentMethods, refetch } = useQuery({
@@ -66,8 +69,26 @@ const PaymentSettings = () => {
     }
   }, [fetchedPaymentMethods]);
   
+  // Check URL for PayPal connected callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('paypal_connected') === 'true') {
+      // Clear the URL parameter
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      toast({
+        title: "PayPal Connected",
+        description: "Your PayPal account has been connected successfully.",
+      });
+      
+      // Refresh payment methods to show the new PayPal account
+      refetch();
+    }
+  }, [toast, refetch]);
+  
   const connectWithPayPal = async () => {
     setIsLoading(true);
+    setConnectionStatus('connecting');
     
     try {
       // Call PayPal subscription function
@@ -91,14 +112,21 @@ const PaymentSettings = () => {
       const result = await response.json();
       
       if (result.approve_url) {
-        // Redirect to PayPal for approval
-        window.location.href = result.approve_url;
+        // Set success before redirecting
+        setConnectionStatus('success');
+        
+        // Redirect to PayPal for approval after a short delay to show the success state
+        setTimeout(() => {
+          window.location.href = result.approve_url;
+        }, 1000);
       } else {
         // Handle success directly if no approval needed
         toast({
           title: "PayPal Connected",
           description: "Your PayPal account has been connected successfully.",
         });
+        
+        setConnectionStatus('success');
         
         // Add mock PayPal account
         const newMethod: PaymentMethod = {
@@ -114,6 +142,8 @@ const PaymentSettings = () => {
         refetch();
       }
     } catch (error: any) {
+      console.error("PayPal connection error:", error);
+      setConnectionStatus('error');
       toast({
         title: "Error",
         description: error.message || "Failed to connect PayPal account",
@@ -392,30 +422,46 @@ const PaymentSettings = () => {
                       </div>
                     </>
                   ) : (
-                    <div className="bg-muted/40 p-4 rounded-lg text-center">
-                      <div className="flex justify-center mb-3">
-                        <PayPalLogo />
-                      </div>
-                      <p className="text-sm mb-4">Connect with PayPal to securely pay using your PayPal account, debit or credit cards.</p>
-                      <Button 
-                        variant="outline" 
-                        className="bg-blue-50 text-blue-600 border-blue-200"
-                        type="button"
-                        onClick={connectWithPayPal}
-                        disabled={isLoading}
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Connecting...
-                          </>
-                        ) : (
-                          <>
-                            <PayPalLogo />
-                            <span className="ml-2">Connect with PayPal</span>
-                          </>
+                    <div className="bg-muted/40 p-4 rounded-lg">
+                      <div className="flex flex-col items-center space-y-4">
+                        <div className="flex justify-center">
+                          <PayPalLogo />
+                        </div>
+                        <p className="text-sm text-center mb-2">Connect with PayPal to securely pay using your PayPal account, debit or credit cards.</p>
+                        
+                        {connectionStatus === 'error' && (
+                          <Alert className="mb-4 border-destructive/50 text-destructive">
+                            <AlertDescription>
+                              There was a problem connecting to PayPal. Please try again.
+                            </AlertDescription>
+                          </Alert>
                         )}
-                      </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          className={`bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 w-full ${connectionStatus === 'success' ? 'bg-green-50 border-green-200 text-green-600' : ''}`}
+                          type="button"
+                          onClick={connectWithPayPal}
+                          disabled={isLoading || connectionStatus === 'success'}
+                        >
+                          {connectionStatus === 'connecting' ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Connecting...
+                            </>
+                          ) : connectionStatus === 'success' ? (
+                            <>
+                              <Check className="mr-2 h-4 w-4" />
+                              Connected with PayPal
+                            </>
+                          ) : (
+                            <>
+                              <PayPalLogo />
+                              <span className="ml-2">Connect with PayPal</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -457,7 +503,7 @@ const PaymentSettings = () => {
                           ? `${method.brand} •••• ${method.last4}`
                           : `PayPal (${method.email})`
                         } 
-                        {method.is_default && <span className="ml-2 text-xs bg-muted px-2 py-1 rounded">Default</span>}
+                        {method.is_default && <Badge className="ml-2 text-xs bg-muted px-2 py-1 rounded">Default</Badge>}
                       </p>
                       {method.type === 'card' && method.exp_month && method.exp_year && (
                         <p className="text-xs text-muted-foreground">
@@ -509,11 +555,31 @@ const PaymentSettings = () => {
       <div className="mt-8">
         <h4 className="text-md font-medium mb-4">Billing History</h4>
         <Card>
-          <CardContent className="p-6 text-center">
-            <p className="text-muted-foreground">No billing history available.</p>
+          <CardContent className="p-6">
+            <div className="text-center">
+              <p className="text-muted-foreground mb-4">Your billing history will appear here once you make a purchase.</p>
+              <Button 
+                variant="outline"
+                onClick={() => window.location.href = '/pricing'}
+              >
+                View Subscription Plans
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
+      
+      <Alert className="mt-8 bg-blue-50 border-blue-200">
+        <AlertDescription className="text-blue-700">
+          <div className="flex items-start">
+            <PayPalLogo />
+            <div className="ml-3">
+              <p className="font-medium">PayPal Integration Active</p>
+              <p className="text-sm mt-1">Your PayPal API credentials have been successfully configured. You can now accept payments through PayPal.</p>
+            </div>
+          </div>
+        </AlertDescription>
+      </Alert>
     </div>
   );
 };
