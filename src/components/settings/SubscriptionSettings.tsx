@@ -163,7 +163,8 @@ const SubscriptionSettings = () => {
     setIsLoading(true);
     
     try {
-      const response = await fetch('/api/paypal-subscription', {
+      // Use the correct URL format for Supabase Edge Functions
+      const response = await fetch(`https://zdpileidtdzlambmbsiq.supabase.co/functions/v1/paypal-subscription`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -176,15 +177,19 @@ const SubscriptionSettings = () => {
         })
       });
       
-      const result = await response.json();
-      
+      // Check if response is OK before trying to parse JSON
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to create subscription');
+        const errorText = await response.text();
+        console.error('PayPal API error:', errorText);
+        throw new Error(`Failed to create subscription (${response.status})`);
       }
+      
+      const result = await response.json();
       
       // Redirect to PayPal approval URL
       window.location.href = result.approve_url;
     } catch (error: any) {
+      console.error('Subscription error:', error);
       toast({
         title: "Subscription Error",
         description: error.message || "Failed to process subscription",

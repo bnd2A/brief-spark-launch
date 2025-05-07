@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/AppLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AccountSettings from '@/components/settings/AccountSettings';
@@ -12,6 +12,7 @@ import { CheckCircle2 } from 'lucide-react';
 
 const Settings = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
   
   // Determine the active tab based on query parameters or default to "account"
@@ -28,18 +29,35 @@ const Settings = () => {
 
   // Check for success messages in URL params
   useEffect(() => {
-    if (queryParams.get('paypal_connected') === 'true') {
+    // Handle subscription success/canceled messages
+    if (queryParams.get('success')) {
+      setSuccessMessage('Subscription was successfully activated!');
+      setShowSuccessAlert(true);
+      // Remove the query parameters from URL without refreshing the page
+      navigate('/app/settings', { replace: true });
+    } else if (queryParams.get('canceled')) {
+      setSuccessMessage('Subscription process was canceled');
+      setShowSuccessAlert(true);
+      // Remove the query parameters from URL without refreshing the page
+      navigate('/app/settings', { replace: true });
+    } 
+    // Handle PayPal connection success
+    else if (queryParams.get('paypal_connected') === 'true') {
       setSuccessMessage('PayPal account successfully connected!');
       setShowSuccessAlert(true);
-      
-      // Auto-hide the alert after 5 seconds
+      // Remove the query parameters from URL without refreshing the page
+      navigate('/app/settings', { replace: true });
+    }
+    
+    // Auto-hide the alert after 5 seconds
+    if (showSuccessAlert) {
       const timer = setTimeout(() => {
         setShowSuccessAlert(false);
       }, 5000);
       
       return () => clearTimeout(timer);
     }
-  }, [queryParams]);
+  }, [queryParams, navigate, showSuccessAlert]);
 
   return (
     <AppLayout>

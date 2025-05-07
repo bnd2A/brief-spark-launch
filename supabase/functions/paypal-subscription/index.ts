@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -21,6 +22,12 @@ const logStep = (step: string, details?: any) => {
 
 // Get PayPal access token
 async function getPayPalAccessToken() {
+  logStep("Getting PayPal access token");
+  
+  if (!PAYPAL_CLIENT_ID || !PAYPAL_SECRET) {
+    throw new Error("PayPal API credentials not configured");
+  }
+  
   const auth = btoa(`${PAYPAL_CLIENT_ID}:${PAYPAL_SECRET}`);
   
   const response = await fetch(`${PAYPAL_API_URL}/v1/oauth2/token`, {
@@ -353,8 +360,13 @@ async function handlePayPalConnected(userId: string, authCode: string) {
 serve(async (req) => {
   // Handle CORS preflight request
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    return new Response(null, { 
+      status: 204, 
+      headers: corsHeaders 
+    });
   }
+  
+  logStep("Received request", { url: req.url, method: req.method });
   
   const url = new URL(req.url);
   const path = url.pathname.split("/").pop();
@@ -378,7 +390,25 @@ serve(async (req) => {
       return handlePayPalConnected(userId, authCode);
     }
     
-    const { userId, action, planType, paymentMethodId } = await req.json();
+    // Make sure we can parse the JSON body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      logStep("Request body parsed", requestBody);
+    } catch (e) {
+      logStep("Failed to parse request body", e);
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid JSON in request body" 
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+    
+    const { userId, action, planType, paymentMethodId } = requestBody;
     
     if (!userId) {
       throw new Error("User ID is required");
@@ -388,7 +418,7 @@ serve(async (req) => {
     
     // Handle different actions
     switch (action) {
-      case "create_subscription":
+      case "create_subscription": {
         // Define plan data based on requested plan type
         let planData;
         if (planType === "pro_monthly") {
@@ -431,40 +461,54 @@ serve(async (req) => {
         // Create subscription
         const subscription = await createSubscription(token, planId, userId);
         
-        return new Response(JSON.stringify({
-          success: true,
-          subscription_id: subscription.id,
-          approve_url: subscription.links.find(link => link.rel === "approve").href,
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            success: true,
+            subscription_id: subscription.id,
+            approve_url: subscription.links.find(link => link.rel === "approve").href,
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
         
-      case "connect_account":
+      case "connect_account": {
         // Connect a PayPal account for payment methods
         const connectionData = await connectPayPalAccount(token, userId);
         
-        return new Response(JSON.stringify({
-          success: true,
-          approve_url: connectionData.approve_url,
-          client_token: connectionData.client_token,
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({
+            success: true,
+            approve_url: connectionData.approve_url,
+            client_token: connectionData.client_token,
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
         
       default:
         // Default response for unsupported action
-        return new Response(JSON.stringify({ error: "Unsupported action" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "Unsupported action" }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
     }
   } catch (error) {
-    console.error(error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    logStep("Error in edge function", { message: error.message, stack: error.stack });
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   }
 });
